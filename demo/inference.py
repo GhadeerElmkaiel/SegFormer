@@ -37,16 +37,14 @@ def main():
 
     for name in images:
         path_to_img = args.images + name
-        start_time = time.time()
+
+        # Getting the results from the model
         result = inference_segmentor(model, path_to_img)
         seg = result[0]
 
-        inference_time = time.time()-start_time
-        print("inference time: ", inference_time)
-
-        # palette = model.PALETTE
         color_seg = np.zeros((seg.shape[0], seg.shape[1], 3), dtype=np.uint8)
 
+        # Recolor the resulted image to match the needed colors
         for label, color in enumerate(palette):
             color_seg[seg == label, :] = color
         
@@ -54,7 +52,7 @@ def main():
         img = color_seg.astype(np.uint8)
 
 
-
+        # Saving the resulted image
         image = Image.fromarray(mmcv.bgr2rgb(img))
         image.save(save_path+name)
 
