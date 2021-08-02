@@ -106,6 +106,85 @@ the structure ```SegFormerheadWithEdges``` was designed and added to ```/SegForm
 To create a new decoder it is necessary to create the new decoder in ```/SegFormer/mmseg/models/decode_heads/``` 
 if the new decoder is not very different from the Segformer decoder it is possible to copy ```segformer_head.py``` and edit it, **But** in the case of adding edges, it was not possible because I needed to add new loss function, so I needed to copy and edit the original code of the decoders ```decode_head.py``` 
 __________________________
+### Chage the dataset:
+To use new dataset we need to create a config file for the new dataset in ```local_configs/_base_/datasets```
+for reference it is possible to compare with the config files created for Sberbank dataset **sber_512x512_repeat.py** & **sber_repeat.py**
+the crop size in the dataset should be the same as the crop size in the model.
+For example in the ```sber_512x512_repeat.py``` config file, we use the 512*512 cropping size, and in ```segformer.b2.512x512.sber.160k.py``` we also use the same cropping size
+
+The code inside the ```sber_512x512_repeat.py```
+```python
+# dataset settings
+dataset_type = 'SberbankDataset'
+data_root = 'data/SberMerged/'
+img_norm_cfg = dict(
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+crop_size = (512, 512)
+train_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='LoadAnnotations'),
+    dict(type='Resize', img_scale=(2048, 512), ratio_range=(0.5, 2.0)),
+    dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PhotoMetricDistortion'),
+    dict(type='Normalize', **img_norm_cfg),
+    dict(type='Pad', size=crop_size, pad_val=0, seg_pad_val=255),
+    dict(type='DefaultFormatBundle'),
+    dict(type='Collect', keys=['img', 'gt_semantic_seg']),
+]
+test_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(
+        type='MultiScaleFlipAug',
+        img_scale=(2048, 512),
+        # img_ratios=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
+        flip=False,
+        transforms=[
+            dict(type='Resize', keep_ratio=True),
+            dict(type='RandomFlip'),
+            dict(type='Normalize', **img_norm_cfg),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img']),
+        ])
+]
+data = dict(
+    samples_per_gpu=6,
+    workers_per_gpu=6,
+    train=dict(
+        type='RepeatDataset',
+        times=500,
+        dataset=dict(
+            type=dataset_type,
+            data_root=data_root,
+            img_dir='train/images',
+            ann_dir='train/Semantic_palette',
+            pipeline=train_pipeline)),
+    val=dict(
+        type=dataset_type,
+        data_root=data_root,
+        img_dir='validation/images',
+        ann_dir='validation/Semantic_palette',
+        pipeline=test_pipeline),
+    test=dict(
+        type=dataset_type,
+        data_root=data_root,
+        img_dir='test/images',
+        ann_dir='test/Semantic_palette',
+        pipeline=test_pipeline))
+```
+The important parts to change are:
+- The root to the dataset (Here I copied the dataset inside the folder **data**)
+```python
+data_root = 'data/SberMerged/'
+```
+The crop size
+```python
+crop_size = (512, 512)
+```
+```python
+
+```
+_______
 # Train
 to train a SegFormer model you need to run the following code:
 ```bash
@@ -117,3 +196,5 @@ for example
 ./tools/dist_train.sh local_configs/segformer/B5/segformer.b5.512x512.sber.160k.py 2
 ```
 in the local_configs file we define the dataset and the training parameters
+
+The trained models will be saved in ```work_dirs``` inside a file named the same name as the used model.
