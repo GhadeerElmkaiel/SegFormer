@@ -41,7 +41,9 @@ cd SegFormer && pip install -e . --user
 ```
 
 ## Instructions For Sberbank Robotics Lab
-Please read the [How to run](How%20to%20run.md) file for more detailed insturctions about adding new dataset, training with new network structures, and applying inference.
+Please read the [How to run](how_to_use.md) file for more detailed insturctions about adding new dataset, training with new network structures, and applying inference.
+
+A discription for the usage of each folder can be found in this [file](What_is_each_folder.md)
 ## Evaluation
 
 Download [trained weights](https://drive.google.com/drive/folders/1GAku0G0iR9DsBxCbfENWMJ27c5lYUeQA?usp=sharing).

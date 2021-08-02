@@ -1,5 +1,5 @@
 # Demo
-To run the demo (test) we need to run the **demo/inference.py** file wiht three mail parameters as follows:
+To run the demo (test) we need to run the **demo/inference.py** file wiht three main parameters as follows:
 
 ```bash
 python demo/inference.py [path to config file] [path to trained model] --images [path to image to test]
@@ -91,7 +91,7 @@ Also we need to change the number of classes in the **model** in **decode_head**
         num_classes=6,
 ```
 
-### Chage the model
+### Change the model
 if we need to change the structure of the neural network we also need to change it in the config file:
 for example to use the structure for neural network with edges we need to change the type of the **decode_head** from ```SegFormerHead``` to ```SegFormerheadWithEdges```
 ```python
@@ -106,7 +106,7 @@ the structure ```SegFormerheadWithEdges``` was designed and added to ```/SegForm
 To create a new decoder it is necessary to create the new decoder in ```/SegFormer/mmseg/models/decode_heads/``` 
 if the new decoder is not very different from the Segformer decoder it is possible to copy ```segformer_head.py``` and edit it, **But** in the case of adding edges, it was not possible because I needed to add new loss function, so I needed to copy and edit the original code of the decoders ```decode_head.py``` 
 __________________________
-### Chage the dataset:
+### Change the dataset:
 To use new dataset we need to create a config file for the new dataset in ```local_configs/_base_/datasets```
 for reference it is possible to compare with the config files created for Sberbank dataset **sber_512x512_repeat.py** & **sber_repeat.py**
 the crop size in the dataset should be the same as the crop size in the model.
@@ -172,17 +172,43 @@ data = dict(
         ann_dir='test/Semantic_palette',
         pipeline=test_pipeline))
 ```
-The important parts to change are:
+The important parts to change are (pay attention to):
+- The dataset type
+```python
+dataset_type = 'SberbankDataset'
+```
+This type should be created and added to ```mmseg/datasets/__init__.py```.
+For more detailed information please see the files ```mmseg/datasets/__init__.py``` and ```mmseg/datasets/sber.py```
 - The root to the dataset (Here I copied the dataset inside the folder **data**)
 ```python
 data_root = 'data/SberMerged/'
 ```
-The crop size
+- The crop size (to match the used model)
 ```python
 crop_size = (512, 512)
 ```
+- The paths to the RGB image and GT mask
 ```python
+    train=dict(
+            .  
+            .
+        img_dir='train/images',
+        ann_dir='train/Semantic_palette',
+            .
+            .
 
+    val=dict(
+            .  
+            .
+        img_dir='validation/images',
+        ann_dir='validation/Semantic_palette',
+            .
+            .
+    test=dict(
+            .  
+            .
+        img_dir='test/images',
+        ann_dir='test/Semantic_palette',
 ```
 _______
 # Train
