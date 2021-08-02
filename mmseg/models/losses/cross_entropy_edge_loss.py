@@ -1,14 +1,12 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-from skimage import feature
 
 from ..builder import LOSSES
 from .utils import weight_reduce_loss
 
 
-def cross_entropy(pred,
+def cross_entropy_with_edges(pred,
                   label,
                   weight=None,
                   class_weight=None,
@@ -31,29 +29,25 @@ def cross_entropy(pred,
     loss = weight_reduce_loss(
         loss, weight=weight, reduction=reduction, avg_factor=avg_factor)
 
-    # print("pred shape:\n", pred.shape)
-    # print("label shape:\n", label.shape)
-    # edeted = np.array(label.cpu())
-    # print("edeted shape:\n", edeted.shape)
-    # print("edge loss:\n", calc_edge_loss(pred, label))
-
     return loss
 
 
-def calc_edge_loss(pred, label):
-    loss = 0
-    device = label.get_device()
-    img = np.array(label.cpu())[0]
-    # print(img.shape)
-    edges = feature.canny(img)
-    edges = np.array(edges)
-    edges = np.array(edges>0, dtype=np.int8)
-    edges = torch.from_numpy(edges).to(device)
-    edges = edges.unsqueeze(0)
-    edges = edges.long()
-    loss = F.cross_entropy(
-        pred,
-        edges)
+def get_edge_pixles(pred, target):
+    """
+    Flattens predictions in the batch (binary case)
+    """
+    pred = pred.view(-1)
+    target = target.view(-1)
+    in_edge = (target != 0)
+    out_edge = (target == 0.)
+    edge_pix = pred[in_edge]
+    non_edge_pix = pred[out_edge]
+    return edge_pix, non_edge_pix
+
+
+def edge_loss(pred, target):
+    edge_pix, non_edge_pix = get_edge_pixles(pred, target)
+    loss = (-(edge_pix.log()).mean() -((1.-non_edge_pix).log()).mean())/2.
     return loss
 
 
@@ -161,7 +155,7 @@ def mask_cross_entropy(pred,
 
 
 @LOSSES.register_module()
-class CrossEntropyLoss(nn.Module):
+class CrossEntropyLossWithEdges(nn.Module):
     """CrossEntropyLoss.
 
     Args:
@@ -182,7 +176,7 @@ class CrossEntropyLoss(nn.Module):
                  reduction='mean',
                  class_weight=None,
                  loss_weight=1.0):
-        super(CrossEntropyLoss, self).__init__()
+        super(CrossEntropyLossWithEdges, self).__init__()
         assert (use_sigmoid is False) or (use_mask is False)
         self.use_sigmoid = use_sigmoid
         self.use_mask = use_mask
@@ -195,7 +189,7 @@ class CrossEntropyLoss(nn.Module):
         elif self.use_mask:
             self.cls_criterion = mask_cross_entropy
         else:
-            self.cls_criterion = cross_entropy
+            self.cls_criterion = cross_entropy_with_edges
 
     def forward(self,
                 cls_score,

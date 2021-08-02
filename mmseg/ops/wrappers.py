@@ -26,6 +26,15 @@ def resize(input,
                         f'out size {(output_h, output_w)} is `nx+1`')
     if isinstance(size, torch.Size):
         size = tuple(int(x) for x in size)
+    # print("------------------------------------")
+    # print("resize in wrappers")
+    # print("------------------------------------")
+    # print("Input.shape: ", input)
+    # print("size: ", size)
+    # print("scale_factor: ", scale_factor)
+    # print("mode: ", mode)
+    # if len(size)>2:
+    #     size = size[:2]
     return F.interpolate(input, size, scale_factor, mode, align_corners)
 
 

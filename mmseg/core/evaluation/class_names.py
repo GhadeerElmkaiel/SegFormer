@@ -11,6 +11,16 @@ def cityscapes_classes():
     ]
 
 
+def sber_classes():
+    """Sbaerbank dataset class names for external use."""
+    # return [
+    #     'Glass', 'Mirror', 'Other optical surface', 'Floor', 'Floor under obstacle', 'Background'
+    # ]
+    return [
+        'Mirror', 'Glass', 'Floor under obstacle', 'Other optical surface', 'Floor', 'Background'
+    ]
+
+
 def ade_classes():
     """ADE20K class names for external use."""
     return [
@@ -58,6 +68,14 @@ def cityscapes_palette():
             [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
             [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100], [0, 80, 100],
             [0, 0, 230], [119, 11, 32]]
+
+
+def sber_palette():
+    """Sberbank dataset palette for external use."""
+    # return [[51,221,255], [102,255,102], [184,61,245], [250,50,83],
+    #         [245,147,49], [0, 0, 0]]
+    return [[102,255,102], [51,221,255], [245,147,49],
+            [184,61,245], [250,50,83], [0, 0, 0]]
 
 
 def ade_palette():
@@ -114,7 +132,8 @@ def voc_palette():
 dataset_aliases = {
     'cityscapes': ['cityscapes'],
     'ade': ['ade', 'ade20k'],
-    'voc': ['voc', 'pascal_voc', 'voc12', 'voc12aug']
+    'voc': ['voc', 'pascal_voc', 'voc12', 'voc12aug'],
+    'sber': ['sber']
 }
 
 

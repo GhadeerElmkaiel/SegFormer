@@ -1,12 +1,15 @@
 import matplotlib.pyplot as plt
 import mmcv
+from mmcv import parallel
 import torch
 from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
 from mmseg.datasets.pipelines import Compose
 from mmseg.models import build_segmentor
+from PIL import Image
 
+import time
 
 def init_segmentor(config, checkpoint=None, device='cuda:0'):
     """Initialize a segmentor from config file.
@@ -95,10 +98,11 @@ def inference_segmentor(model, img):
     # forward the model
     with torch.no_grad():
         result = model(return_loss=False, rescale=True, **data)
+
     return result
 
 
-def show_result_pyplot(model, img, result, palette=None, fig_size=(15, 10)):
+def show_result_pyplot(model, img, result, palette=None, fig_size=(15, 10), name=None):
     """Visualize the segmentation results on the image.
 
     Args:
@@ -112,7 +116,16 @@ def show_result_pyplot(model, img, result, palette=None, fig_size=(15, 10)):
     """
     if hasattr(model, 'module'):
         model = model.module
+
+    # print("Palette: ", palette)
+    # print("Palette.shape: ", len(palette))
+    # print("img: ", img)
+    # print("result: ", result)
+
     img = model.show_result(img, result, palette=palette, show=False)
     plt.figure(figsize=fig_size)
     plt.imshow(mmcv.bgr2rgb(img))
     plt.show()
+    if name!=None:
+        image = Image.fromarray(mmcv.bgr2rgb(img))
+        image.save(name)

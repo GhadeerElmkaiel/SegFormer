@@ -52,7 +52,6 @@ def train_segmentor(model,
             seed=cfg.seed,
             drop_last=True) for ds in dataset
     ]
-
     # put model on gpus
     if distributed:
         find_unused_parameters = cfg.get('find_unused_parameters', False)
@@ -113,3 +112,4 @@ def train_segmentor(model,
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
     runner.run(data_loaders, cfg.workflow)
+    

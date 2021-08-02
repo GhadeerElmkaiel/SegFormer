@@ -1,17 +1,39 @@
 from abc import ABCMeta, abstractmethod
 
+import numpy as np
 import torch
 import torch.nn as nn
-from mmcv.cnn import normal_init
+import torch.nn.functional as F
+from mmcv.cnn import normal_init, ConvModule
 from mmcv.runner import auto_fp16, force_fp32
 
 from mmseg.core import build_pixel_sampler
 from mmseg.ops import resize
-from ..builder import build_loss
+from ..builder import build_loss, HEADS
+from mmseg.models.utils import *
+from skimage import feature
+from PIL import Image 
+import cv2
+
+
 from ..losses import accuracy
 
+class MLP(nn.Module):
+    """
+    Linear Embedding
+    """
+    def __init__(self, input_dim=2048, embed_dim=768):
+        super().__init__()
+        self.proj = nn.Linear(input_dim, embed_dim)
 
-class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
+    def forward(self, x):
+        x = x.flatten(2).transpose(1, 2)
+        x = self.proj(x)
+        return x
+
+
+@HEADS.register_module()
+class SegFormerheadWithEdges(nn.Module, metaclass=ABCMeta):
     """Base class for BaseDecodeHead.
 
     Args:
@@ -42,8 +64,7 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         align_corners (bool): align_corners argument of F.interpolate.
             Default: False.
     """
-
-    def __init__(self,
+    def partial_init(self,
                  in_channels,
                  channels,
                  *,
@@ -62,7 +83,7 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
                  ignore_index=255,
                  sampler=None,
                  align_corners=False):
-        super(BaseDecodeHead, self).__init__()
+        super(SegFormerheadWithEdges, self).__init__()
         self._init_inputs(in_channels, in_index, input_transform)
         self.channels = channels
         self.num_classes = num_classes
@@ -86,6 +107,34 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         else:
             self.dropout = None
         self.fp16_enabled = False
+
+
+    def __init__(self, feature_strides, **kwargs):
+        self.partial_init(input_transform='multiple_select', **kwargs)
+        ######################### Aditional ##########################
+        assert len(feature_strides) == len(self.in_channels)
+        assert min(feature_strides) == feature_strides[0]
+        self.feature_strides = feature_strides
+
+        c1_in_channels, c2_in_channels, c3_in_channels, c4_in_channels = self.in_channels
+
+        decoder_params = kwargs['decoder_params']
+        embedding_dim = decoder_params['embed_dim']
+
+        self.linear_c4 = MLP(input_dim=c4_in_channels, embed_dim=embedding_dim)
+        self.linear_c3 = MLP(input_dim=c3_in_channels, embed_dim=embedding_dim)
+        self.linear_c2 = MLP(input_dim=c2_in_channels, embed_dim=embedding_dim)
+        self.linear_c1 = MLP(input_dim=c1_in_channels, embed_dim=embedding_dim)
+
+        self.linear_fuse = ConvModule(
+            in_channels=embedding_dim*4,
+            out_channels=embedding_dim,
+            kernel_size=1,
+            norm_cfg=dict(type='SyncBN', requires_grad=True)
+        )
+
+        self.linear_pred = nn.Conv2d(embedding_dim, self.num_classes, kernel_size=1)
+        self.edges_pred = nn.Conv2d(embedding_dim, 2, kernel_size=1)
 
     def extra_repr(self):
         """Extra repr."""
@@ -164,10 +213,32 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         return inputs
 
     @auto_fp16()
-    @abstractmethod
     def forward(self, inputs):
-        """Placeholder of forward function."""
-        pass
+        x = self._transform_inputs(inputs)  # len=4, 1/4,1/8,1/16,1/32
+        c1, c2, c3, c4 = x
+
+        ############## MLP decoder on C1-C4 ###########
+        n, _, h, w = c4.shape
+
+        _c4 = self.linear_c4(c4).permute(0,2,1).reshape(n, -1, c4.shape[2], c4.shape[3])
+        _c4 = resize(_c4, size=c1.size()[2:],mode='bilinear',align_corners=False)
+
+        _c3 = self.linear_c3(c3).permute(0,2,1).reshape(n, -1, c3.shape[2], c3.shape[3])
+        _c3 = resize(_c3, size=c1.size()[2:],mode='bilinear',align_corners=False)
+
+        _c2 = self.linear_c2(c2).permute(0,2,1).reshape(n, -1, c2.shape[2], c2.shape[3])
+        _c2 = resize(_c2, size=c1.size()[2:],mode='bilinear',align_corners=False)
+
+        _c1 = self.linear_c1(c1).permute(0,2,1).reshape(n, -1, c1.shape[2], c1.shape[3])
+
+        _c = self.linear_fuse(torch.cat([_c4, _c3, _c2, _c1], dim=1))
+
+        x = self.dropout(_c)
+        x_out = self.linear_pred(x)
+        edges = self.edges_pred(x)
+
+        return x_out , edges
+
 
     def forward_train(self, inputs, img_metas, gt_semantic_seg, train_cfg):
         """Forward function for training.
@@ -186,8 +257,10 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
             dict[str, Tensor]: a dictionary of loss components
         """
 
-        seg_logits = self.forward(inputs)
+        seg_logits, edges_logits = self.forward(inputs)
         losses = self.losses(seg_logits, gt_semantic_seg)
+        edge_loss = self.edge_loss(edges_logits, gt_semantic_seg)
+        losses['loss_seg'] = losses['loss_seg']+edge_loss
         return losses
 
     def forward_test(self, inputs, img_metas, test_cfg):
@@ -205,7 +278,8 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         Returns:
             Tensor: Output segmentation map.
         """
-        return self.forward(inputs)
+        seg_logits, edges_logits = self.forward(inputs)
+        return seg_logits
 
     def cls_seg(self, feat):
         """Classify each pixel."""
@@ -235,3 +309,41 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
             ignore_index=self.ignore_index)
         loss['acc_seg'] = accuracy(seg_logit, seg_label)
         return loss
+
+    def edge_loss(self, pred, label):
+        pred = resize(
+            input=pred,
+            size=label.shape[2:],
+            mode='bilinear',
+            align_corners=self.align_corners)
+        device = label.get_device()
+
+        # img = np.array(label.cpu())[0]
+        # edges = np.array(self.getBordered(img[0]),dtype=np.uint8)
+        # edges = torch.from_numpy(edges).to(device)
+        # edges = edges.unsqueeze(0)
+
+        edges = []
+        for img in np.array(label.cpu()):
+            edge = np.array(self.getBordered(img[0]),dtype=np.uint8)
+            edges.append(edge)
+
+        edges = torch.from_numpy(np.array(edges)).to(device)
+        # edges = edges.unsqueeze(0)
+        edges = edges.long()
+        loss = F.cross_entropy(
+            pred,
+            edges)
+        return loss
+
+    def getBordered(self, image, width=10, thresh=100):
+        img = Image.fromarray((image*40).astype(np.uint8))
+        img = img.convert('L')
+        image = np.array(img)
+        bg = np.zeros(image.shape)
+        threshed = cv2.Canny(image, threshold1=thresh, threshold2=2*thresh)
+
+        contours, _ = cv2.findContours(threshed.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        for contour in contours:
+            cv2.drawContours(bg, [contour], 0, (255, 255, 255), width)
+        return cv2.drawContours(bg, contours, 0, (255, 255, 255), width).astype(bool) 

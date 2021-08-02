@@ -113,6 +113,8 @@ data
 *.log.json
 work_dirs/
 work_dirs
+results/
+results
 pretrained
 pretrained/
 # Pytorch
