@@ -111,7 +111,7 @@ to train a SegFormer model you need to run the following code:
 ```bash
 ./tools/dist_train.sh [path to config file] [number of GPUs to use]
 ```
-
+for example
 
 ```bash
 ./tools/dist_train.sh local_configs/segformer/B5/segformer.b5.512x512.sber.160k.py 2

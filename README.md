@@ -40,6 +40,8 @@ pip install opencv-python==4.5.1.48
 cd SegFormer && pip install -e . --user
 ```
 
+## Instructions For Sberbank Robotics Lab
+Please read the [How to run](How%20to%20run.md) file for more detailed insturctions about adding new dataset, training with new network structures, and applying inference.
 ## Evaluation
 
 Download [trained weights](https://drive.google.com/drive/folders/1GAku0G0iR9DsBxCbfENWMJ27c5lYUeQA?usp=sharing).
