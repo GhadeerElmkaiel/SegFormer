@@ -129,6 +129,7 @@ def main():
     meta['seed'] = args.seed
     meta['exp_name'] = osp.basename(args.config)
 
+    # building the model
     model = build_segmentor(
         cfg.model,
         train_cfg=cfg.get('train_cfg'),
@@ -136,6 +137,7 @@ def main():
 
     logger.info(model)
 
+    # building the dataset loader
     datasets = [build_dataset(cfg.data.train)]
 
     if len(cfg.workflow) == 2:
@@ -152,6 +154,7 @@ def main():
             PALETTE=datasets[0].PALETTE)
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
+    # training the model
     train_segmentor(
         model,
         datasets,
