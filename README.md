@@ -37,10 +37,15 @@ pip install torchvision==0.8.2
 pip install timm==0.3.2
 pip install mmcv-full==1.2.7
 pip install opencv-python==4.5.1.48
+pip install ipython
 cd SegFormer && pip install -e . --user
 ```
 
 ## Instructions For Sberbank Robotics Lab
+#### **additional installation notes:**  
+- the mmcv version should be <=1.3.0, so it is better to install it as follows: ```pip install mmcv==1.3.0```  
+- ipython also should be installed which is not mentioned in the original instructions.
+- I also added skimage for edges detection so this also should be installed ```pip install scikit-image```
 Please read the [How to run](how_to_use.md) file for more detailed insturctions about adding new dataset, training with new network structures, and applying inference.
 
 A discription for the usage of each folder can be found in this [file](What_is_each_folder.md)
