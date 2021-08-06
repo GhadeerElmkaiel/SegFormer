@@ -135,6 +135,7 @@ class SegFormerheadWithEdges(nn.Module, metaclass=ABCMeta):
 
         self.linear_pred = nn.Conv2d(embedding_dim, self.num_classes, kernel_size=1)
         self.edges_pred = nn.Conv2d(embedding_dim, 2, kernel_size=1)
+    
 
     def extra_repr(self):
         """Extra repr."""

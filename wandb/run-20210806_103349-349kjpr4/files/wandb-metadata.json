@@ -1,0 +1,29 @@
+{
+    "os": "Linux-5.11.0-25-generic-x86_64-with-glibc2.29",
+    "python": "3.8.10",
+    "heartbeatAt": "2021-08-06T07:33:50.827175",
+    "startedAt": "2021-08-06T07:33:49.567969",
+    "docker": null,
+    "gpu": "NVIDIA GeForce RTX 2070 with Max-Q Design",
+    "gpu_count": 1,
+    "cpu_count": 12,
+    "cuda": "11.0.228",
+    "args": [
+        "--local_rank=0",
+        "local_configs/segformer/B5/segformer.b5.512x512.sber.edges.160k.py",
+        "--launcher",
+        "pytorch"
+    ],
+    "state": "running",
+    "program": "./tools/train.py",
+    "codePath": "tools/train.py",
+    "git": {
+        "remote": "git@gitlab.com:glass_and_mirrors/segformer.git",
+        "commit": "e04b71a16e7cea75d4a7efd770e315cb689d2218"
+    },
+    "email": "stolyarov.n.r@sberbank.ru",
+    "root": "/home/n_stolyarov/HDD/mirrors/mirrors_ws/src/segformer",
+    "host": "n-stolyarov-workbook",
+    "username": "n_stolyarov",
+    "executable": "/home/n_stolyarov/HDD/mirrors/mirrors_ws/src/segformer/segformer_env/bin/python"
+}
