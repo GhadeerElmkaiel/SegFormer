@@ -3,6 +3,11 @@ import os.path as osp
 from mmcv.runner import Hook
 from torch.utils.data import DataLoader
 
+try:
+    import wandb
+    WANDB_IMPORTED = True
+except:
+    WANDB_IMPORTED = False
 
 class EvalHook(Hook):
     """Evaluation hook.
@@ -43,6 +48,12 @@ class EvalHook(Hook):
         """Call evaluate function of dataset."""
         eval_res = self.dataloader.dataset.evaluate(
             results, logger=runner.logger, **self.eval_kwargs)
+        if WANDB_IMPORTED:
+                wandb.log({
+                'mIoU': eval_res['mIoU'],
+                'mAccuracy': eval_res['mAcc'],
+                'aAccuracy': eval_res['aAcc']
+                })
         for name, val in eval_res.items():
             runner.log_buffer.output[name] = val
         runner.log_buffer.ready = True

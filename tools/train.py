@@ -15,6 +15,11 @@ from mmseg.datasets import build_dataset
 from mmseg.models import build_segmentor
 from mmseg.utils import collect_env, get_root_logger
 
+try:
+    import wandb
+    WANDB_IMPORTED = True
+except:
+    WANDB_IMPORTED = False
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a segmentor')
@@ -155,6 +160,10 @@ def main():
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
     # training the model
+    if WANDB_IMPORTED:
+        wandb.config = cfg._cfg_dict
+        wandb.init(project='SegFormer', entity='slab', config = cfg._cfg_dict)
+    
     train_segmentor(
         model,
         datasets,
