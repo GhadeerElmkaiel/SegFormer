@@ -1,1 +1,1 @@
-{"Loss": 1.673703670501709, "Accuracy": 46.263885498046875, "_runtime": 971, "_timestamp": 1628236200, "_step": 3764, "Iteration": 1882, "Iterations": 160000}
+{"Loss": 0.296536922454834, "Accuracy": 83.66584777832031, "_runtime": 1023, "_timestamp": 1628236252, "_step": 3964, "Iteration": 1982, "Iterations": 160000}
