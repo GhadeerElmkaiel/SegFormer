@@ -162,7 +162,7 @@ def main():
     # training the model
     if WANDB_IMPORTED:
         wandb.config = cfg._cfg_dict
-        wandb.init(project='SegFormer', entity='slab', config = cfg._cfg_dict)
+        wandb.init(project='SegFormer', entity='slab', config = cfg._cfg_dict, group='DDP')
     
     train_segmentor(
         model,

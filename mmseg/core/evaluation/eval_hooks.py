@@ -49,11 +49,14 @@ class EvalHook(Hook):
         eval_res = self.dataloader.dataset.evaluate(
             results, logger=runner.logger, **self.eval_kwargs)
         if WANDB_IMPORTED:
-                wandb.log({
-                'mIoU': eval_res['mIoU'],
-                'mAccuracy': eval_res['mAcc'],
-                'aAccuracy': eval_res['aAcc']
-                })
+            try:
+                    wandb.log({
+                    'mIoU': eval_res['mIoU'],
+                    'mAccuracy': eval_res['mAcc'],
+                    'aAccuracy': eval_res['aAcc']
+                    })
+            except Exception:
+                print('There is no internet connection, so WANDB throws an error')
         for name, val in eval_res.items():
             runner.log_buffer.output[name] = val
         runner.log_buffer.ready = True
