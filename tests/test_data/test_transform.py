@@ -247,12 +247,13 @@ def test_rotate():
     assert results['gt_semantic_seg'].shape[:2] == (h, w)
 
 
-def test_normalize():
-    img_norm_cfg = dict(
-        mean=[123.675, 116.28, 103.53],
-        std=[58.395, 57.12, 57.375],
-        to_rgb=True)
-    transform = dict(type='Normalize', **img_norm_cfg)
+def test_pad():
+    # test assertion if both size_divisor and size is None
+    with pytest.raises(AssertionError):
+        transform = dict(type='Pad')
+        build_from_cfg(transform, PIPELINES)
+
+    transform = dict(type='Pad', size_divisor=32)
     transform = build_from_cfg(transform, PIPELINES)
     results = dict()
     img = mmcv.imread(
@@ -266,11 +267,20 @@ def test_normalize():
     results['scale_factor'] = 1.0
 
     results = transform(results)
+    # original img already divisible by 32
+    assert np.equal(results['img'], original_img).all()
+    img_shape = results['img'].shape
+    assert img_shape[0] % 32 == 0
+    assert img_shape[1] % 32 == 0
 
-    mean = np.array(img_norm_cfg['mean'])
-    std = np.array(img_norm_cfg['std'])
-    converted_img = (original_img[..., ::-1] - mean) / std
-    assert np.allclose(results['img'], converted_img)
+    resize_transform = dict(
+        type='Resize', img_scale=(1333, 800), keep_ratio=True)
+    resize_module = build_from_cfg(resize_transform, PIPELINES)
+    results = resize_module(results)
+    results = transform(results)
+    img_shape = results['img'].shape
+    assert img_shape[0] % 32 == 0
+    assert img_shape[1] % 32 == 0
 
 
 def test_rgb2gray():
