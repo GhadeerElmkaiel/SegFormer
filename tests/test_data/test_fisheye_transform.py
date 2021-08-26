@@ -12,224 +12,315 @@ from mmseg.datasets.builder import PIPELINES
 PATH_TO_IMAGE = osp.join(osp.dirname(__file__),'..', '..','data', 'SberMerged','test', 'images_fisheye', '1.png')
 PATH_TO_SEG = osp.join(osp.dirname(__file__),'..', '..','data', 'SberMerged','test', 'Semantic_fisheye', '1.png')
 
-def test_resize():
-    # test assertion if img_scale is a list
+def test_fisheye_shift_prob_assert_error():
     with pytest.raises(AssertionError):
-        transform = dict(type='Resize', img_scale=[1333, 800], keep_ratio=True)
-        build_from_cfg(transform, PIPELINES)
-
-    # test assertion if len(img_scale) while ratio_range is not None
+        transform = dict(type='RandomFisheyeShift', prob=-1)
+        shift = build_from_cfg(transform, PIPELINES)
     with pytest.raises(AssertionError):
-        transform = dict(
-            type='Resize',
-            img_scale=[(1333, 800), (1333, 600)],
-            ratio_range=(0.9, 1.1),
-            keep_ratio=True)
-        build_from_cfg(transform, PIPELINES)
+        transform = dict(type='RandomFisheyeShift', prob=1.5)
+        shift = build_from_cfg(transform, PIPELINES)
 
-    # test assertion for invalid multiscale_mode
+def test_fisheye_shift_bbox_assert_error():
     with pytest.raises(AssertionError):
-        transform = dict(
-            type='Resize',
-            img_scale=[(1333, 800), (1333, 600)],
-            keep_ratio=True,
-            multiscale_mode='2333')
-        build_from_cfg(transform, PIPELINES)
+        bbox = [[10,10],[0,0]]
+        transform = dict(type='RandomFisheyeShift', prob=0.5, bbox=bbox)
+        shift = build_from_cfg(transform, PIPELINES)
+    with pytest.raises(AssertionError):
+        bbox = [[100,100],[100,100]]
+        transform = dict(type='RandomFisheyeShift', prob=0.5, bbox=bbox)
+        shift = build_from_cfg(transform, PIPELINES)
 
-    transform = dict(type='Resize', img_scale=(1333, 800), keep_ratio=True)
-    resize_module = build_from_cfg(transform, PIPELINES)
-
-    results = dict()
-    # (288, 512, 3)
+def test_fisheye_shift_0_prob():
+    # Test 0 probability
+    transform = dict(type='RandomFisheyeShift', prob=0, max_dx = 100, max_dy = 100)
+    shift = build_from_cfg(transform, PIPELINES)
     img = mmcv.imread(PATH_TO_IMAGE, 'color')
-    assert img.shape == (1550, 1960, 3)
-    results['img'] = img
-    results['img_shape'] = img.shape
-    results['ori_shape'] = img.shape
-    # Set initial values for default meta_keys
-    results['pad_shape'] = img.shape
-    results['scale_factor'] = 1.0
-
-    resized_results = resize_module(results.copy())
-    assert resized_results['img_shape'] == (800, 1012, 3)
-
-    # test keep_ratio=False
-    transform = dict(
-        type='Resize',
-        img_scale=(1280, 800),
-        multiscale_mode='value',
-        keep_ratio=False)
-    resize_module = build_from_cfg(transform, PIPELINES)
-    resized_results = resize_module(results.copy())
-    assert resized_results['img_shape'] == (800, 1280, 3)
-
-    # # test multiscale_mode='range'
-    # transform = dict(
-    #     type='Resize',
-    #     img_scale=[(1333, 400), (1333, 1200)],
-    #     multiscale_mode='range',
-    #     keep_ratio=True)
-    # resize_module = build_from_cfg(transform, PIPELINES)
-    # resized_results = resize_module(results.copy())
-    # assert max(resized_results['img_shape'][:2]) <= 1333
-    # assert min(resized_results['img_shape'][:2]) >= 400
-    # assert min(resized_results['img_shape'][:2]) <= 1200
-
-    # # test multiscale_mode='value'
-    # transform = dict(
-    #     type='Resize',
-    #     img_scale=[(1333, 800), (1333, 400)],
-    #     multiscale_mode='value',
-    #     keep_ratio=True)
-    # resize_module = build_from_cfg(transform, PIPELINES)
-    # resized_results = resize_module(results.copy())
-    # assert resized_results['img_shape'] in [(750, 1333, 3), (400, 711, 3)]
-
-    # # test multiscale_mode='range'
-    # transform = dict(
-    #     type='Resize',
-    #     img_scale=(1333, 800),
-    #     ratio_range=(0.9, 1.1),
-    #     keep_ratio=True)
-    # resize_module = build_from_cfg(transform, PIPELINES)
-    # resized_results = resize_module(results.copy())
-    # assert max(resized_results['img_shape'][:2]) <= 1333 * 1.1
-
-    # # test img_scale=None and ratio_range is tuple.
-    # # img shape: (288, 512, 3)
-    # transform = dict(
-    #     type='Resize', img_scale=None, ratio_range=(0.5, 2.0), keep_ratio=True)
-    # resize_module = build_from_cfg(transform, PIPELINES)
-    # resized_results = resize_module(results.copy())
-    # assert int(288 * 0.5) <= resized_results['img_shape'][0] <= 288 * 2.0
-    # assert int(512 * 0.5) <= resized_results['img_shape'][1] <= 512 * 2.0
-
-
-def test_flip():
-    # test assertion for invalid prob
-    with pytest.raises(AssertionError):
-        transform = dict(type='RandomFlip', prob=1.5)
-        build_from_cfg(transform, PIPELINES)
-
-    # test assertion for invalid direction
-    with pytest.raises(AssertionError):
-        transform = dict(type='RandomFlip', prob=1, direction='horizonta')
-        build_from_cfg(transform, PIPELINES)
-
-    transform = dict(type='RandomFlip', prob=1)
-    flip_module = build_from_cfg(transform, PIPELINES)
-
     results = dict()
-    img = mmcv.imread(PATH_TO_IMAGE, 'color')
-    original_img = copy.deepcopy(img)
-    seg = np.array(
-        Image.open(PATH_TO_SEG))
-    original_seg = copy.deepcopy(seg)
-    results['img'] = img
-    results['gt_semantic_seg'] = seg
-    results['seg_fields'] = ['gt_semantic_seg']
-    results['img_shape'] = img.shape
-    results['ori_shape'] = img.shape
-    # Set initial values for default meta_keys
-    results['pad_shape'] = img.shape
-    results['scale_factor'] = 1.0
-
-    results = flip_module(results)
-
-    flip_module = build_from_cfg(transform, PIPELINES)
-    results = flip_module(results)
-    assert np.equal(original_img, results['img']).all()
-    assert np.equal(original_seg, results['gt_semantic_seg']).all()
-
-def test_pad():
-    # test assertion if both size_divisor and size is None
-    with pytest.raises(AssertionError):
-        transform = dict(type='Pad')
-        build_from_cfg(transform, PIPELINES)
-
-    transform = dict(type='Pad', size_divisor=10)
-    transform = build_from_cfg(transform, PIPELINES)
-    results = dict()
-    img = mmcv.imread(PATH_TO_IMAGE, 'color')
     original_img = copy.deepcopy(img)
     results['img'] = img
-    results['img_shape'] = img.shape
-    results['ori_shape'] = img.shape
-    # Set initial values for default meta_keys
-    results['pad_shape'] = img.shape
-    results['scale_factor'] = 1.0
-
-    results = transform(results)
-    # original img already divisible by 10
-    assert np.equal(results['img'], original_img).all()
-    img_shape = results['img'].shape
-    assert img_shape[0] % 10 == 0
-    assert img_shape[1] % 10 == 0
-
-    transform = dict(type='Pad', size_divisor=32)
-    transform = build_from_cfg(transform, PIPELINES)
-    results = dict()
-    img = mmcv.imread(PATH_TO_IMAGE, 'color')
-    original_img = copy.deepcopy(img)
-    results['img'] = img
-    results['img_shape'] = img.shape
-    results['ori_shape'] = img.shape
-    # Set initial values for default meta_keys
-    results['pad_shape'] = img.shape
-    results['scale_factor'] = 1.0
-
-    results = transform(results)
-    # Divise by 32
-    img_shape = results['img'].shape
-    assert img_shape[0] % 32 == 0
-    assert img_shape[1] % 32 == 0
-
-    resize_transform = dict(
-        type='Resize', img_scale=(512, 512), keep_ratio=False)
-    resize_module = build_from_cfg(resize_transform, PIPELINES)
-    results = resize_module(results)
-    results = transform(results)
-    img_shape = results['img'].shape
-    assert img_shape[0] % 512 == 0
-    assert img_shape[1] % 512 == 0
-
-    resize_transform = dict(
-        type='Resize', img_scale=(512, 512), keep_ratio=True)
-    resize_module = build_from_cfg(resize_transform, PIPELINES)
-    results = resize_module(results)
-    results = transform(results)
-    img_shape = results['img'].shape
-    # Test resize with keep_ratio
-    assert img_shape[0] % 32 == 0
-    assert img_shape[1] % 32 == 0
-
-
-def test_fisheye_crop():
-    # with pytest.raises(AssertionError):
-    #     transform = dict(type='RandomFisheyeCrop', cat_max_ratio=1., ignore_index=255,
-    #                     mvx = 100, const_crop_y = 150, rand_crop_y = 50,
-    #                     crop_prob = 0.5, shift_prob = 0.5)
-    #     build_from_cfg(transform, PIPELINES)
-
-    results = dict()
-    img = mmcv.imread(PATH_TO_IMAGE, 'color')
     seg = np.array(Image.open(PATH_TO_SEG))
-    results['img'] = img
+    original_seg = copy.deepcopy(seg)
     results['gt_semantic_seg'] = seg
     results['seg_fields'] = ['gt_semantic_seg']
     results['img_shape'] = img.shape
     results['ori_shape'] = img.shape
-    # Set initial values for default meta_keys
     results['pad_shape'] = img.shape
     results['scale_factor'] = 1.0
+    results['fisheye_bbox'] = [[0,0], [1440, 1440]]
+    for _ in range(30):
+        results = shift(results)
+        assert np.equal(original_img, results['img']).all()
+        assert np.equal(original_seg, results['gt_semantic_seg']).all()
 
-    h, w, _ = img.shape
-    transform = dict(type='RandomFisheyeCrop', cat_max_ratio=1., ignore_index=255,
-                        mvx = 100, const_crop_y = 150, rand_crop_y = 50,
-                        crop_prob = 0., shift_prob = 0.)
-    crop_module = build_from_cfg(transform, PIPELINES)
-    results = crop_module(results)
-    assert results['img'].shape[:2] == (h, w)
-    # assert results['img'].shape[:2] == (h - 20, w - 20)
-    # assert results['img_shape'][:2] == (h - 20, w - 20)
-    # assert results['gt_semantic_seg'].shape[:2] == (h - 20, w - 20)
+
+def test_fisheye_shift_bbox_is_equal_to_shape():
+    # Test bbox == image.shape
+    transform = dict(type='RandomFisheyeShift', prob=1., max_dx = 10, max_dy = 40)
+    shift = build_from_cfg(transform, PIPELINES)
+    img = mmcv.imread(PATH_TO_IMAGE, 'color')
+    results = dict()
+    original_img = copy.deepcopy(img)
+    results['img'] = img
+    seg = np.array(Image.open(PATH_TO_SEG))
+    original_seg = copy.deepcopy(seg)
+    results['gt_semantic_seg'] = seg
+    results['seg_fields'] = ['gt_semantic_seg']
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    results['pad_shape'] = img.shape
+    results['scale_factor'] = 1.0
+    results['fisheye_bbox'] = [[0,0], [img.shape[1]-1, img.shape[0]-1]]
+    for _ in range(30):
+        results = shift(results)
+        assert original_img.shape == results['img'].shape
+        assert original_seg.shape == results['gt_semantic_seg'].shape
+        assert np.equal(original_img, results['img']).all()
+        assert np.equal(original_seg, results['gt_semantic_seg']).all()
+
+def test_fisheye_shift_only_x():
+    # Test shift only in one axis X
+    transform = dict(type='RandomFisheyeShift', prob=1., max_dx = 100, max_dy = 0)
+    shift = build_from_cfg(transform, PIPELINES)
+    img = mmcv.imread(PATH_TO_IMAGE, 'color')
+    results = dict()
+    original_img = copy.deepcopy(img)
+    results['img'] = img
+    seg = np.array(Image.open(PATH_TO_SEG))
+    original_seg = copy.deepcopy(seg)
+    results['gt_semantic_seg'] = seg
+    results['seg_fields'] = ['gt_semantic_seg']
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    results['pad_shape'] = img.shape
+    results['scale_factor'] = 1.0
+    results['fisheye_bbox'] = [[71,124], [1370, 1316]]
+    for _ in range(30):
+        results = shift(results)
+        assert np.equal(original_img[:124,:,:], results['img'][:124,:,:]).all()
+        assert np.equal(original_seg[:124,:,:], results['gt_semantic_seg'][:124,:,:]).all()
+        assert np.equal(original_img[1317:,:,:], results['img'][1317:,:,:]).all()
+        assert np.equal(original_seg[1317:,:,:], results['gt_semantic_seg'][1317:,:,:]).all()
+
+def test_fisheye_shift_only_y():
+    # Test shift only in one axis Y
+    transform = dict(type='RandomFisheyeShift', prob=1., max_dx = 0, max_dy = 100)
+    shift = build_from_cfg(transform, PIPELINES)
+    img = mmcv.imread(PATH_TO_IMAGE, 'color')
+    results = dict()
+    original_img = copy.deepcopy(img)
+    results['img'] = img
+    seg = np.array(Image.open(PATH_TO_SEG))
+    original_seg = copy.deepcopy(seg)
+    results['gt_semantic_seg'] = seg
+    results['seg_fields'] = ['gt_semantic_seg']
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    results['pad_shape'] = img.shape
+    results['scale_factor'] = 1.0
+    results['fisheye_bbox'] = [[71,124], [1370, 1316]]
+    for _ in range(30):
+        results = shift(results)
+        assert np.equal(original_img[:,:71,:], results['img'][:,:71,:]).all()
+        assert np.equal(original_seg[:,:71,:], results['gt_semantic_seg'][:,:71,:]).all()
+        assert np.equal(original_img[:,1371:,:], results['img'][:,1371:,:]).all()
+        assert np.equal(original_seg[:,1371:,:], results['gt_semantic_seg'][:,1371:,:]).all()
+
+def test_fisheye_shift_dx_dy_ge_shape():
+    # Test dx, dy > image.shape
+    img = mmcv.imread(PATH_TO_IMAGE, 'color')
+    transform = dict(type='RandomFisheyeShift', prob=1.,
+                max_dx = img.shape[1]+10, max_dy = img.shape[0]+10)
+    shift = build_from_cfg(transform, PIPELINES)
+    results = dict()
+    original_img = copy.deepcopy(img)
+    results['img'] = img
+    seg = np.array(Image.open(PATH_TO_SEG))
+    original_seg = copy.deepcopy(seg)
+    results['gt_semantic_seg'] = seg
+    results['seg_fields'] = ['gt_semantic_seg']
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    results['pad_shape'] = img.shape
+    results['scale_factor'] = 1.0
+    results['fisheye_bbox'] = [[71,124], [1370, 1316]]
+    results = shift(results)
+    for _ in range(30):
+        assert original_img.shape == results['img'].shape
+        assert original_seg.shape == results['gt_semantic_seg'].shape
+
+def test_fisheye_shift_bbox_recalculate():
+    # Test bbox recalculate
+    img = mmcv.imread(PATH_TO_IMAGE, 'color')
+    transform = dict(type='RandomFisheyeShift', prob=1.,
+                dx_range=(20,100),dy_range = (20,100))
+    shift = build_from_cfg(transform, PIPELINES)
+    results = dict()
+    original_img = copy.deepcopy(img)
+    results['img'] = img
+    seg = np.array(Image.open(PATH_TO_SEG))
+    original_seg = copy.deepcopy(seg)
+    results['gt_semantic_seg'] = seg
+    results['seg_fields'] = ['gt_semantic_seg']
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    results['pad_shape'] = img.shape
+    results['scale_factor'] = 1.0
+    results['fisheye_bbox'] = [[71,124], [1370, 1316]]
+    original_bbox = copy.deepcopy(results['fisheye_bbox'])
+    results = shift(results)
+    assert results['fisheye_bbox'] != original_bbox
+
+
+def test_fisheye_crop_0_prob():
+    # Test 0 probability
+    bbox = [[0,0], [1440, 1440]]
+    transform = dict(type='RandomFisheyeCrop', prob=0, bbox = bbox)
+    crop = build_from_cfg(transform, PIPELINES)
+    img = mmcv.imread(PATH_TO_IMAGE, 'color')
+    results = dict()
+    original_img = copy.deepcopy(img)
+    results['img'] = img
+    seg = np.array(Image.open(PATH_TO_SEG))
+    original_seg = copy.deepcopy(seg)
+    results['gt_semantic_seg'] = seg
+    results['seg_fields'] = ['gt_semantic_seg']
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    results['pad_shape'] = img.shape
+    results['scale_factor'] = 1.0
+    for _ in range(30):
+        results = crop(results)
+        assert np.equal(original_img, results['img']).all()
+        assert np.equal(original_seg, results['gt_semantic_seg']).all()
+
+def test_fisheye_crop_part_equals_bbox():
+    # Test part == bbox
+    bbox = [[71,124], [1370, 1316]]
+    bbox_W = bbox[1][0] - bbox[0][0] + 1
+    bbox_H = bbox[1][1] - bbox[0][1] + 1
+    transform = dict(type='RandomFisheyeCrop', prob=1., bbox = bbox, part_x_range=(1,1), part_y_range=(1,1))
+    crop = build_from_cfg(transform, PIPELINES)
+    img = mmcv.imread(PATH_TO_IMAGE, 'color')
+    results = dict()
+    original_img = copy.deepcopy(img)
+    results['img'] = img
+    seg = np.array(Image.open(PATH_TO_SEG))
+    original_seg = copy.deepcopy(seg)
+    results['gt_semantic_seg'] = seg
+    results['seg_fields'] = ['gt_semantic_seg']
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    results['pad_shape'] = img.shape
+    results['scale_factor'] = 1.0
+    results = crop(results)
+    assert results['img'].shape == (bbox_H, bbox_W, 3)
+    assert np.equal(original_img[bbox[0][1]:bbox[1][1]+1,bbox[0][0]:bbox[1][0]+1,:], results['img']).all()
+    assert np.equal(original_seg[bbox[0][1]:bbox[1][1]+1,bbox[0][0]:bbox[1][0]+1,:], results['gt_semantic_seg']).all()
+
+def test_fisheye_crop_size_after_x_y_range():
+    # Test crop size after x, y range
+    bbox = [[71,124], [1370, 1316]]
+    bbox_W = bbox[1][0] - bbox[0][0] + 1
+    bbox_H = bbox[1][1] - bbox[0][1] + 1
+    ratio = bbox_W/bbox_H
+    transform = dict(type='RandomFisheyeCrop', prob=1., bbox = bbox,
+                        part_x_range =(0.6, 1.2), part_y_range = (0.3, 1.7))
+    crop = build_from_cfg(transform, PIPELINES)
+    img = mmcv.imread(PATH_TO_IMAGE, 'color')
+    original_img = copy.deepcopy(img)
+    seg = np.array(Image.open(PATH_TO_SEG))
+    original_seg = copy.deepcopy(seg)
+    for _ in range(30):
+        results = dict()
+        results['img'] = copy.deepcopy(img)
+        results['gt_semantic_seg'] = copy.deepcopy(seg)
+        results['seg_fields'] = ['gt_semantic_seg']
+        results['img_shape'] = img.shape
+        results['ori_shape'] = img.shape
+        results['pad_shape'] = img.shape
+        results['scale_factor'] = 1.0
+        results = crop(results)
+        assert  np.ceil(bbox_W * 0.6).astype('int') <= results['img'].shape[1] <= np.ceil(bbox_W * 1.2).astype('int')
+        assert  np.ceil(bbox_H * 0.3).astype('int') <= results['img'].shape[0] <= np.ceil(bbox_H * 1.7).astype('int')
+
+def test_fisheye_crop_bbox_after_crop_without_size():
+    # Test bbox after crop without resize
+    bbox = [[71,124], [1370, 1316]]
+    bbox_W = bbox[1][0] - bbox[0][0] + 1
+    bbox_H = bbox[1][1] - bbox[0][1] + 1
+    ratio = bbox_W/bbox_H
+    transform = dict(type='RandomFisheyeCrop', prob=1., bbox = bbox, part_x_range=(1,1), part_y_range=(1,1))
+    crop = build_from_cfg(transform, PIPELINES)
+    img = mmcv.imread(PATH_TO_IMAGE, 'color')
+    results = dict()
+    original_img = copy.deepcopy(img)
+    results['img'] = img
+    seg = np.array(Image.open(PATH_TO_SEG))
+    original_seg = copy.deepcopy(seg)
+    results['gt_semantic_seg'] = seg
+    results['seg_fields'] = ['gt_semantic_seg']
+    results['img_shape'] = img.shape
+    results['ori_shape'] = img.shape
+    results['pad_shape'] = img.shape
+    results['scale_factor'] = 1.0
+    results = crop(results)
+    assert results['fisheye_bbox'] == [[0,0],[bbox_W-1, bbox_H-1]]
+
+def test_fisheye_crop_bbox_after_crop_with_dx():
+    # Test bbox after crop with dx
+    bbox = [[71,124], [1370, 1316]]
+    bbox_W = bbox[1][0] - bbox[0][0] + 1
+    bbox_H = bbox[1][1] - bbox[0][1] + 1
+    ratio = bbox_W/bbox_H
+    transform = dict(type='RandomFisheyeCrop', dx_range=(50,100), prob=1., bbox = bbox, part_x_range=(1,1), part_y_range=(1,1))
+    crop = build_from_cfg(transform, PIPELINES)
+    img = mmcv.imread(PATH_TO_IMAGE, 'color')
+    original_img = copy.deepcopy(img)
+    seg = np.array(Image.open(PATH_TO_SEG))
+    original_seg = copy.deepcopy(seg)
+    for _ in range(30):
+        results = dict()
+        results['img'] = copy.deepcopy(img)
+        results['gt_semantic_seg'] = copy.deepcopy(seg)
+        results['seg_fields'] = ['gt_semantic_seg']
+        results['img_shape'] = img.shape
+        results['ori_shape'] = img.shape
+        results['pad_shape'] = img.shape
+        results['scale_factor'] = 1.0
+        results = crop(results)
+        # The Y coordinate should be constant
+        assert results['fisheye_bbox'][0][1] == 0
+        assert results['fisheye_bbox'][1][1] == bbox_H-1
+        # The X coordinate should be in range
+        assert 0 <= results['fisheye_bbox'][0][0] <= 99
+        assert bbox_W - 101 <= results['fisheye_bbox'][1][0] <= bbox_W - 1
+
+def test_fisheye_crop_bbox_after_crop_with_dy():
+    # Test bbox after crop with dx
+    bbox = [[71,124], [1370, 1316]]
+    bbox_W = bbox[1][0] - bbox[0][0] + 1
+    bbox_H = bbox[1][1] - bbox[0][1] + 1
+    ratio = bbox_W/bbox_H
+    transform = dict(type='RandomFisheyeCrop', dy_range=(5,70), prob=1., bbox = bbox, part_x_range=(1,1), part_y_range=(1,1))
+    crop = build_from_cfg(transform, PIPELINES)
+    img = mmcv.imread(PATH_TO_IMAGE, 'color')
+    original_img = copy.deepcopy(img)
+    seg = np.array(Image.open(PATH_TO_SEG))
+    original_seg = copy.deepcopy(seg)
+    for _ in range(30):
+        results = dict()
+        results['img'] = copy.deepcopy(img)
+        results['gt_semantic_seg'] = copy.deepcopy(seg)
+        results['seg_fields'] = ['gt_semantic_seg']
+        results['img_shape'] = img.shape
+        results['ori_shape'] = img.shape
+        results['pad_shape'] = img.shape
+        results['scale_factor'] = 1.0
+        results = crop(results)
+        # The Y coordinate should be in range
+        assert 0 <= results['fisheye_bbox'][0][1] <= 69
+        assert bbox_H - 69 <= results['fisheye_bbox'][1][1] <= bbox_H - 1 
+        # The X coordinate should be constant
+        assert results['fisheye_bbox'][0][0] == 0
+        assert results['fisheye_bbox'][1][0] == bbox_W-1
+
