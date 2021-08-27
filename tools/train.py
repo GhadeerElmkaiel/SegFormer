@@ -3,6 +3,7 @@ import copy
 import os
 import os.path as osp
 import time
+from datetime import date
 
 import mmcv
 import torch
@@ -162,7 +163,8 @@ def main():
     # training the model
     if WANDB_IMPORTED:
         wandb.config = cfg._cfg_dict
-        wandb.init(project='SegFormer', entity='slab', config = cfg._cfg_dict, group='DDP')
+        wandb.init(project='SegFormer', entity='slab', config = cfg._cfg_dict,
+        group=f"{cfg['model']['backbone']['type']}--{cfg['model']['decode_head']['type']}--{date.today().strftime('%B_%d_%Y')}")
     
     train_segmentor(
         model,

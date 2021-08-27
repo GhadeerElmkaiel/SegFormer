@@ -6,7 +6,7 @@ from .test_time_aug import MultiScaleFlipAug
 from .transforms import (AlignedResize, CLAHE, AdjustGamma, Normalize, Pad,
                          PhotoMetricDistortion, RandomCrop, RandomFlip,
                          RandomRotate, Rerange, Resize, RGB2Gray, SegRescale)
-from .fisheye_transforms import RandomFisheyeCrop, RandomFisheyeShift
+from .fisheye_transforms import RandomFisheyeCrop, RandomFisheyeShift, LoadFisheyeImageFromFile
 
 __all__ = [
     'Compose', 'to_tensor', 'ToTensor', 'ImageToTensor', 'ToDataContainer',
@@ -14,5 +14,5 @@ __all__ = [
     'MultiScaleFlipAug', 'AlignedResize', 'Resize', 'RandomFlip', 'Pad', 'RandomCrop',
     'Normalize', 'SegRescale', 'PhotoMetricDistortion', 'RandomRotate',
     'AdjustGamma', 'CLAHE', 'Rerange', 'RGB2Gray',
-    'RandomFisheyeCrop', 'RandomFisheyeShift'
+    'RandomFisheyeCrop', 'RandomFisheyeShift', 'LoadFisheyeImageFromFile'
 ]
