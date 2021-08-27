@@ -7,33 +7,32 @@ crop_size = (512, 512)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations'),
+    dict(type='RandomFisheyeShift', prob=0.5, max_dx=200, max_dy=200,
+         bbox=[[71, 124], [1370, 1316]]),
+    dict(type='RandomFisheyeCrop', prob=0.5,
+         part_x_range=(0.8, 1.2), part_y_range=(0.8, 1.2)),
     dict(type='RandomFlip', prob=0.5),
-    dict(type='RandomFisheyeCrop', cat_max_ratio=1., ignore_index=255, mvx = 100, const_crop_y = 150, rand_crop_y = 50, crop_prob = 0.5, shift_prob = 0.5),
-    dict(type='Resize', img_scale=crop_size, ratio_range=(0.5, 2.0)),
+    dict(type='PhotoMetricDistortion'),
     dict(type='Normalize', **img_norm_cfg),
-    dict(type='Collect', keys=['img', 'gt_semantic_seg']),
+    dict(type='Resize', img_scale=crop_size, keep_ratio=False),
+    dict(type='DefaultFormatBundle'),
+    dict(type='Collect', keys=['img', 'gt_semantic_seg'])
 ]
-# test_pipeline = [
-#     dict(type='LoadImageFromFile'),
-#     dict(
-#         type='MultiScaleFlipAug',
-#         img_scale=(512, 512),
-#         # img_ratios=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
-#         flip=False,
-#         transforms=[
-#             dict(type='Resize', keep_ratio=True),
-#             dict(type='Normalize', **img_norm_cfg),
-#             dict(type='ImageToTensor', keys=['img']),
-#             dict(type='Collect', keys=['img']),
-#         ])
-# ]
-
 test_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='Resize', img_scale=crop_size, ratio_range=(0.5, 2.0)),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Collect', keys=['img']),
+    dict(
+        type='MultiScaleFlipAug',
+        img_scale=(512, 512),
+        # img_ratios=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
+        flip=False,
+        transforms=[
+            dict(type='Resize', keep_ratio=True),
+            dict(type='Normalize', **img_norm_cfg),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img']),
+        ])
 ]
+
 
 data = dict(
     samples_per_gpu=6,
