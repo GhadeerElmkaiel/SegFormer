@@ -21,7 +21,6 @@ def main():
     model = init_segmentor(args.config, args.checkpoint, device=args.device)
     # test a single image
     result, output = inference_segmentor(model, args.img)
-    print(output.shape)
     # show the results
     show_result_pyplot(model, args.img, result, get_palette(args.palette), name=args.img.split('/')[-1])
 

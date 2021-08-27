@@ -26,7 +26,7 @@ def main():
         save_path = "results/" + str(time.time()) + '/'
     else:
         save_path = args.save_path
-    os.makedirs(save_path, exist_ok=False)
+    os.makedirs(save_path, exist_ok=True)
 
     # build the model from a config file and a checkpoint file
     model = init_segmentor(args.config, args.checkpoint, device=args.device)
@@ -39,7 +39,7 @@ def main():
         path_to_img = args.images + name
 
         # Getting the results from the model
-        result = inference_segmentor(model, path_to_img)
+        result, output = inference_segmentor(model, path_to_img)
         seg = result[0]
 
         color_seg = np.zeros((seg.shape[0], seg.shape[1], 3), dtype=np.uint8)
