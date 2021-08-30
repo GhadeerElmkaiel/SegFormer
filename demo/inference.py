@@ -1,11 +1,14 @@
 from argparse import ArgumentParser
 import os
+
+import torch
 from mmseg.apis import inference_segmentor, init_segmentor, show_result_pyplot
 from mmseg.core.evaluation import get_palette
 import mmcv
 from PIL import Image
 import numpy as np
 import time
+import tqdm
 
 
 
@@ -27,14 +30,23 @@ def main():
     else:
         save_path = args.save_path
     os.makedirs(save_path, exist_ok=True)
+    os.makedirs(save_path+'semantic/', exist_ok=True)
+    os.makedirs(save_path+'confidence/', exist_ok=True)
+    os.makedirs(save_path+'data/', exist_ok=True)
 
     # build the model from a config file and a checkpoint file
     model = init_segmentor(args.config, args.checkpoint, device=args.device)
     # Create a list of all images:
     images = [x for x in os.listdir(args.images) if "." in x]
+
+    #           -- Void --     -- Mirror --      -- FUO --      -- Glass --      -- OOP --     -- Floor --   -- background  --
+    # palette = [[255,255,255],[102, 255, 102], [245, 147, 49], [51, 221, 255], [184, 61, 245], [250, 50, 83], [0, 0, 0]]
+
+    #           -- Mirror --      -- Glass --      -- FUO --      -- OOP --     -- Floor --   -- background  --
     palette = [[102, 255, 102], [51, 221, 255], [245, 147, 49], [184, 61, 245], [250, 50, 83], [0, 0, 0]]
     palette = np.array(palette)
 
+    bar = tqdm.tqdm(total=len(images), desc="Making masks...")
     for name in images:
         path_to_img = args.images + name
 
@@ -54,7 +66,12 @@ def main():
 
         # Saving the resulted image
         image = Image.fromarray(mmcv.bgr2rgb(img))
-        image.save(save_path+name)
+        confidence = Image.fromarray((255*torch.max(output.squeeze(), 0)[0]).cpu().detach().numpy().astype('uint8'), mode='L')
+        image.save(save_path+'semantic/'+name)
+        confidence.save(save_path+'confidence/'+name)
+        torch.save(output.squeeze().cpu(),save_path+'data/'+name[:-4]+'.pt')
+        bar.update()
+    bar.close()
 
 
 if __name__ == '__main__':
