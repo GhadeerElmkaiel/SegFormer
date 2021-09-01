@@ -33,6 +33,7 @@ Other requirements:
 An example (works for me): ```CUDA 10.1``` and  ```pytorch 1.7.1``` 
 
 ```
+pip install attr
 pip install torchvision==0.8.2
 pip install timm==0.3.2
 pip install mmcv-full==1.2.7
