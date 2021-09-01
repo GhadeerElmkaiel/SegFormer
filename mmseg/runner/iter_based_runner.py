@@ -74,10 +74,18 @@ class IterBasedRunner(BaseRunner):
             #     'Accuracy': outputs['log_vars']['decode.acc_seg'],
             #     'LR': self.current_lr()[-1]
             #     })
-            self.tb_writer.add_scalar('Loss',
-                            outputs['log_vars']['loss'], self.iter)
-            self.tb_writer.add_scalar('Accuracy',
-                            outputs['log_vars']['decode.acc_seg'], self.iter)
+            # if self.iter % 50 == 0:
+            #     from icecream import ic
+            #     ic(data_batch['img'].data[-1].shape)
+            #     self.model.eval()
+            #     outputs = self.model(data_batch['img'].data[-1][0], data_batch['img_metas'].data[-1][0], data_batch['gt_semantic_seg'].data[-1][0])
+            #     self.model.train()
+            #     ic(outputs)
+            #     self.tb_writer.add_scalar('Loss',
+            #                     outputs['log_vars']['loss'], self.iter)
+            #     self.tb_writer.add_scalar('Accuracy',
+            #                     outputs['log_vars']['decode.acc_seg'], self.iter)
+            
         self.outputs = outputs
         self.call_hook('after_train_iter')
         self._inner_iter += 1

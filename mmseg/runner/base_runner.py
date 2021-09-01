@@ -5,8 +5,6 @@ import os.path as osp
 import warnings
 from abc import ABCMeta, abstractmethod
 
-from datetime import date
-
 import torch
 from torch.optim import Optimizer
 
@@ -108,7 +106,7 @@ class BaseRunner(metaclass=ABCMeta):
         self.logger = logger
         self.meta = meta
 
-        self.tb_writer = SummaryWriter(f"tensor_board/{date.today().strftime('%B_%d_%Y')}")
+        # self.tb_writer = SummaryWriter(f"tensor_board/{date.today().strftime('%B_%d_%Y')}")
 
         # create work_dir
         if mmcv.is_str(work_dir):

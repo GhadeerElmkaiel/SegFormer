@@ -155,14 +155,19 @@ class EncoderDecoder(BaseSegmentor):
 
         loss_decode = self._decode_head_forward_train(x, img_metas,
                                                       gt_semantic_seg)
+        res_img = self._decode_head_forward_test(x, img_metas)
         losses.update(loss_decode)
+        log_img = dict(
+            original=img,
+            prediction=res_img
+        )
 
         if self.with_auxiliary_head:
             loss_aux = self._auxiliary_head_forward_train(
                 x, img_metas, gt_semantic_seg)
             losses.update(loss_aux)
 
-        return losses
+        return losses, log_img
 
     # TODO refactor
     def slide_inference(self, img, img_meta, rescale):

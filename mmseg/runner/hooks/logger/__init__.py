@@ -8,5 +8,6 @@ from .wandb import WandbLoggerHook
 
 __all__ = [
     'LoggerHook', 'MlflowLoggerHook', 'PaviLoggerHook',
-    'TensorboardLoggerHook', 'TextLoggerHook', 'WandbLoggerHook'
+    'TensorboardLoggerHook', 'TextLoggerHook', 'WandbLoggerHook',
+    'TensorboardLoggerImagesHook'
 ]

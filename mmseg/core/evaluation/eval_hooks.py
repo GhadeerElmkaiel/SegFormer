@@ -3,12 +3,6 @@ import os.path as osp
 from mmcv.runner import Hook
 from torch.utils.data import DataLoader
 
-# try:
-#     import wandb
-#     WANDB_IMPORTED = True
-# except:
-#     WANDB_IMPORTED = False
-
 class EvalHook(Hook):
     """Evaluation hook.
 
@@ -48,21 +42,13 @@ class EvalHook(Hook):
         """Call evaluate function of dataset."""
         eval_res = self.dataloader.dataset.evaluate(
             results, logger=runner.logger, **self.eval_kwargs)
-        # if WANDB_IMPORTED:
-        #     try:
-        #             wandb.log({
-        #             'mIoU': eval_res['mIoU'],
-        #             'mAccuracy': eval_res['mAcc'],
-        #             'aAccuracy': eval_res['aAcc']
-        #             })
-        #     except Exception:
-        #         print('There is no internet connection, so WANDB throws an error')
-        runner.tb_writer.add_scalar('mIoU',
-                            eval_res['mIoU'], runner.iter)
-        runner.tb_writer.add_scalar('mAccuracy',
-                            eval_res['mAcc'], runner.iter)
-        runner.tb_writer.add_scalar('aAccuracy',
-                            eval_res['aAcc'], runner.iter)
+
+        # runner.tb_writer.add_scalar('mIoU',
+        #                     eval_res['mIoU'], runner.iter)
+        # runner.tb_writer.add_scalar('mAccuracy',
+        #                     eval_res['mAcc'], runner.iter)
+        # runner.tb_writer.add_scalar('aAccuracy',
+        #                     eval_res['aAcc'], runner.iter)
         for name, val in eval_res.items():
             runner.log_buffer.output[name] = val
         runner.log_buffer.ready = True

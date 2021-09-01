@@ -3,6 +3,8 @@ dataset_type = 'SberbankDataset'
 data_root = 'data/SberMerged/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+# img_norm_cfg = dict(
+#     mean=[0., 0., 0.], std=[1., 1., 1.], to_rgb=True)
 crop_size = (512, 512)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
