@@ -24,6 +24,7 @@ def main():
         '--palette',
         default='sber',
         help='Color palette used for segmentation map')
+    parser.add_argument('--num_classes', help='Number of classes', default=6, choices=[6,7])
     args = parser.parse_args()
     if args.save_path == "results/":
         save_path = "results/" + str(time.time()) + '/'
@@ -39,11 +40,14 @@ def main():
     # Create a list of all images:
     images = [x for x in os.listdir(args.images) if "." in x]
 
-    #           -- Void --     -- Mirror --      -- FUO --      -- Glass --      -- OOP --     -- Floor --   -- background  --
-    # palette = [[255,255,255],[102, 255, 102], [245, 147, 49], [51, 221, 255], [184, 61, 245], [250, 50, 83], [0, 0, 0]]
-
-    #           -- Mirror --      -- Glass --      -- FUO --      -- OOP --     -- Floor --   -- background  --
-    palette = [[102, 255, 102], [51, 221, 255], [245, 147, 49], [184, 61, 245], [250, 50, 83], [0, 0, 0]]
+    if args.num_classes == 7:
+        #           -- Void --     -- Mirror --      -- FUO --      -- Glass --      -- OOP --     -- Floor --   -- background  --
+        palette = [[255,255,255],[102, 255, 102], [245, 147, 49], [51, 221, 255], [184, 61, 245], [250, 50, 83], [0, 0, 0]]
+    elif args.num_classes == 6:
+        #           -- Mirror --      -- Glass --      -- FUO --      -- OOP --     -- Floor --   -- background  --
+        palette = [[102, 255, 102], [51, 221, 255], [245, 147, 49], [184, 61, 245], [250, 50, 83], [0, 0, 0]]
+    else:
+        raise AssertionError('Wrong number of classes')
     palette = np.array(palette)
 
     bar = tqdm.tqdm(total=len(images), desc="Making masks...")
