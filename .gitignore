@@ -123,3 +123,4 @@ trash/
 trash
 wandb/
 onnx/
+tensor_board/
