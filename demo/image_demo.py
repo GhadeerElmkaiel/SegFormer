@@ -20,7 +20,7 @@ def main():
     # build the model from a config file and a checkpoint file
     model = init_segmentor(args.config, args.checkpoint, device=args.device)
     # test a single image
-    result = inference_segmentor(model, args.img)
+    result, output = inference_segmentor(model, args.img)
     # show the results
     show_result_pyplot(model, args.img, result, get_palette(args.palette), name=args.img.split('/')[-1])
 
