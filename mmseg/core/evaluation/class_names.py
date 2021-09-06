@@ -20,6 +20,15 @@ def sber_classes():
         'Mirror', 'Glass', 'Floor under obstacle', 'Other optical surface', 'Floor', 'Background'
     ]
 
+def sber_fisheye_classes():
+    """Sbaerbank dataset class names for external use."""
+    # return [
+    #     'Glass', 'Mirror', 'Other optical surface', 'Floor', 'Floor under obstacle', 'Background'
+    # ]
+    return [
+        'Mirror', 'Glass', 'Floor under obstacle', 'Other optical surface', 'Floor', 'Background', 'Void'
+    ]
+
 
 def ade_classes():
     """ADE20K class names for external use."""
@@ -76,6 +85,13 @@ def sber_palette():
     #         [245,147,49], [0, 0, 0]]
     return [[102,255,102], [51,221,255], [245,147,49],
             [184,61,245], [250,50,83], [0, 0, 0]]
+
+def sber_fisheye_palette():
+    """Sberbank dataset palette for external use."""
+    # return [[51,221,255], [102,255,102], [184,61,245], [250,50,83],
+    #         [245,147,49], [0, 0, 0]]
+    return [[255,255,255],[102, 255, 102], [245, 147, 49], [51, 221, 255],
+    [184, 61, 245], [250, 50, 83], [0, 0, 0]]
 
 
 def ade_palette():

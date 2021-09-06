@@ -47,3 +47,10 @@ lr_config = dict(_delete_=True, policy='poly',
 data = dict(samples_per_gpu=2, workers_per_gpu=1)
 checkpoint_config = dict(by_epoch=False, interval=16000)
 evaluation = dict(interval=16000, metric='mIoU')
+
+log_config = dict(
+    interval=10,
+    hooks=[
+        dict(type='TextLoggerHook', by_epoch=False),
+        dict(type='WandbLoggerHook', init_kwargs=dict(project='SegFormer', entity='slab', group="TestHook"), by_epoch=False)
+    ])

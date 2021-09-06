@@ -122,12 +122,13 @@ class TensorboardLoggerImagesHook(LoggerHook):
 
         seg = torch.argmax(log_images['prediction'],1, keepdims=True).to(torch.uint8)
 
-        color_seg = torch.zeros((1,3,*seg.shape[-2:],), dtype=torch.uint8)
+        color_seg = torch.zeros((seg.shape[0],3,*seg.shape[-2:],), dtype=torch.uint8)
 
         # Recolor the resulted image to match the needed colors
         for label, color in enumerate(palette):
-            color_seg[0,:,seg[0,0,...] == label] = color.view(-1,1)
+            color_seg.permute(1,0,2,3)[:,(seg.permute(1,0,2,3)==label).squeeze()] = color.view(-1,1)
 
         img_resize = torchvision.transforms.Resize(size=log_images['original'].shape[-2:])
         img_denormalize = torchvision.transforms.Normalize(mean=[-123.675/58.395, -116.28/57.12, -103.53/57.375], std=[1./58.395, 1./57.12, 1./57.375], inplace=True)
-        return torchvision.utils.make_grid(torch.cat([img_denormalize(log_images['original']).to(torch.uint8).cpu(),img_resize(color_seg).to(torch.uint8)]))
+        return torchvision.utils.make_grid(torch.cat([img_denormalize(log_images['original']).to(torch.uint8).cpu(),img_resize(color_seg).to(torch.uint8)]),
+                                            nrow=log_images['original'].shape[0], padding=10)

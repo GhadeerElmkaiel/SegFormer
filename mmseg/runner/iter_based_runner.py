@@ -68,23 +68,6 @@ class IterBasedRunner(BaseRunner):
             raise TypeError('model.train_step() must return a dict')
         if 'log_vars' in outputs:
             self.log_buffer.update(outputs['log_vars'], outputs['num_samples'])
-            # if WANDB_IMPORTED:
-            #     wandb.log({
-            #     'Loss': outputs['log_vars']['loss'],
-            #     'Accuracy': outputs['log_vars']['decode.acc_seg'],
-            #     'LR': self.current_lr()[-1]
-            #     })
-            # if self.iter % 50 == 0:
-            #     from icecream import ic
-            #     ic(data_batch['img'].data[-1].shape)
-            #     self.model.eval()
-            #     outputs = self.model(data_batch['img'].data[-1][0], data_batch['img_metas'].data[-1][0], data_batch['gt_semantic_seg'].data[-1][0])
-            #     self.model.train()
-            #     ic(outputs)
-            #     self.tb_writer.add_scalar('Loss',
-            #                     outputs['log_vars']['loss'], self.iter)
-            #     self.tb_writer.add_scalar('Accuracy',
-            #                     outputs['log_vars']['decode.acc_seg'], self.iter)
             
         self.outputs = outputs
         self.call_hook('after_train_iter')
@@ -121,8 +104,6 @@ class IterBasedRunner(BaseRunner):
         assert isinstance(data_loaders, list)
         assert mmcv.is_list_of(workflow, tuple)
         assert len(data_loaders) == len(workflow)
-        # if WANDB_IMPORTED:
-        #     wandb.watch(self.model)
         if max_iters is not None:
             warnings.warn(
                 'setting max_iters in run is deprecated, '
@@ -155,11 +136,6 @@ class IterBasedRunner(BaseRunner):
                     if mode == 'train' and self.iter >= self._max_iters:
                         break
                     iter_runner(iter_loaders[i], **kwargs)
-            # if WANDB_IMPORTED:
-            #     wandb.log({
-            #         "Iteration": self.iter,
-            #         "Iterations": self._max_iters
-            #         })
         time.sleep(1)  # wait for some hooks like loggers to finish
         self.call_hook('after_epoch')
         self.call_hook('after_run')

@@ -106,8 +106,6 @@ class BaseRunner(metaclass=ABCMeta):
         self.logger = logger
         self.meta = meta
 
-        # self.tb_writer = SummaryWriter(f"tensor_board/{date.today().strftime('%B_%d_%Y')}")
-
         # create work_dir
         if mmcv.is_str(work_dir):
             self.work_dir = osp.abspath(work_dir)
