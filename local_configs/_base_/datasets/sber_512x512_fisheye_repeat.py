@@ -13,7 +13,7 @@ train_pipeline = [
     dict(type='RandomFlip', prob=0.5),
     dict(type='PhotoMetricDistortion'),
     dict(type='Normalize', **img_norm_cfg),
-    dict(type='Resize', img_scale=crop_size, keep_ratio=False),
+    dict(type='Resize', img_scale=crop_size, keep_ratio=True),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_semantic_seg']),
 ]
