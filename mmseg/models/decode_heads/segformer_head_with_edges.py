@@ -237,7 +237,6 @@ class SegFormerheadWithEdges(nn.Module, metaclass=ABCMeta):
         x = self.dropout(_c)
         x_out = self.linear_pred(x)
         edges = self.edges_pred(x)
-
         return x_out , edges
 
 
