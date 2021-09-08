@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import mmcv
 import os.path as osp
+from .utils.FishEyeGenerator import FishEyeGenerator
 from ..builder import PIPELINES
 
 @PIPELINES.register_module()
@@ -167,8 +168,8 @@ class RandomFisheyeCrop(object):
                 updated according to crop size.
         """
 
-        self.cropped = np.random.rand()<self.prob
-        if(self.cropped):
+        self.cropped = np.random.rand()<self.prob and results['distorted']
+        if(self.cropped ):
             if('fisheye_bbox' in results.keys()):
                 if self.checkBBOX(results['fisheye_bbox']):
                     self.bbox = results['fisheye_bbox']
@@ -229,6 +230,8 @@ class RandomFisheyeShift(object):
         else:
             raise AssertionError("There should be at least on of max_dy or dy_range")
         self.palette = palette
+        
+        
         
         
     def get_shift_values(self,pic_size):
@@ -307,7 +310,7 @@ class RandomFisheyeShift(object):
         Returns:
             dict: Randomly shift results.
         """
-        self.shifted = np.random.rand()<self.prob
+        self.shifted = np.random.rand()<self.prob and results['distorted']
         if(self.shifted):
             if('fisheye_bbox' in results.keys()):
                 if self.checkBBOX(results['fisheye_bbox']):
@@ -432,4 +435,132 @@ class LoadFisheyeImageFromFile(object):
         repr_str += f'(to_float32={self.to_float32},'
         repr_str += f"color_type='{self.color_type}',"
         repr_str += f"imdecode_backend='{self.imdecode_backend}')"
+        return repr_str
+    
+    
+@PIPELINES.register_module()
+class DistortPinholeToFisheye(object):
+    """Distort pinhole image to fisheye image with random focal image.
+
+    Required keys are "img", "mask", "seg_fields"  Added or updated keys are  "img", "mask",
+    "img_shape" (same as `img_shape`) and focal_distance.
+
+    Args:
+        path_to_maps_dict_pickle : Path to dict with maps for random transforms. 
+        Dict has following structure: key = focal_distance, value = [map_x, map_y]
+        maps_probability : array with probabilities of every focal distance fot distortion. Sum of it equals to 1 and it has the same length as maps dict
+        input_shape : shape of input image
+        output_shape : shape of output image
+    """
+
+    def __init__(self, focal_distances = None, maps_probability = None, transform_probability = 1,  input_shape = (720,1280), output_shape = (1200,1920)):
+        self.focal_distances = focal_distances
+        self.maps_probability = maps_probability
+        self.transform_probability = transform_probability
+        self.input_shape = input_shape
+        self.output_shape = output_shape
+        if(not focal_distances):
+            self.maps_probability = []
+            return
+        if(maps_probability != None):
+            if(not np.allclose(sum(maps_probability), 1) and len(maps_probability) != 0):
+                
+                raise AssertionError("Sum of proba components not equals 1")
+            self.maps_probability = maps_probability
+        else:
+            self.maps_probability = [1/len(focal_distances) for i in range(len(focal_distances))]
+        self.shape = output_shape
+        if(len(self.focal_distances) != len(self.maps_probability)):
+            raise AssertionError("Length of focal_distances not equals to maps_probabilty")
+        if(len(np.unique(focal_distances)) != len(focal_distances)):
+            raise AssertionError("Not all focal distances are unique")
+        if(self.focal_distances):
+            self.maps_dict = self.get_maps_dict()
+        try:
+            mapx, mapy = self.maps_dict[list(self.maps_dict.keys())[0]]
+            img = self.transform(np.ones((input_shape[0], input_shape[1], 3)), mapx, mapy)
+            if not img.shape[:-1] == output_shape:
+                raise AssertionError("Wrong output dimensions for chosen maps")
+        except IndexError:
+            raise AssertionError("Wrong input dimensions for chosen maps")
+    
+    def get_maps_dict(self):
+        maps_dict = {}
+        self.bbox_dict = {}
+        for f in self.focal_distances:
+            feg = FishEyeGenerator(focal_len = f, dst_shape = self.output_shape)
+            feg.transFromColor(np.ones([self.input_shape[0], self.input_shape[1], 3]))
+            map_x, map_y = feg._map_cols, feg._map_rows
+            maps_dict[f] = [map_x, map_y]
+            temp = self.transform(np.ones((self.input_shape[0], self.input_shape[1], 3))*255, map_x, map_y, is_mask = False)
+            self.bbox_dict[f] = self.found_bbox(temp)
+        return maps_dict
+    
+    def found_bbox(self, pic):
+        pic = pic.mean(axis = 2)
+        for i in range(0, pic.shape[0]):
+            if(pic[i,:].sum()>0):
+                break
+        ty = i
+        for i in range(pic.shape[0]-1, 0, -1):
+            if(pic[i,:].sum()>0):
+                break
+        by = i
+        for i in range(0, pic.shape[1]):
+            if(pic[:,i].sum()>0):
+                break
+        tx = i
+        for i in range(pic.shape[1]-1, 0, -1):
+            if(pic[:,i].sum()>0):
+                break
+        bx = i
+        return [[tx, ty], [bx,by]]
+            
+
+    def get_transform(self):
+        f = np.random.choice(list(self.maps_dict.keys()), p=self.maps_probability)
+        return self.maps_dict[f], f
+    
+    
+    
+    def transform(self, img, map_x, map_y, is_mask = False):
+        bkg_color = np.ones(3)*255*is_mask
+        res = np.hstack((img, np.zeros((img.shape[0], 1, 3), dtype=np.uint8)))
+        res[0, img.shape[1]] = bkg_color
+        res = np.array(res[(map_y, map_x)])
+        res = res.reshape(self.shape[0], self.shape[1], 3)
+        return res
+
+    def __call__(self, results):
+        """Call functions distort pinhole image to fisheye with random focal distance.
+
+        Args:
+            results (dict): Result dict from :obj:`mmseg.CustomDataset`.
+
+        Returns:
+            dict: The dict contains distorted image, mask and meta information.
+        """
+        img = results['img']
+        if(sum(self.maps_probability) != 0 and np.random.rand() < self.transform_probability):
+            
+            [map_x, map_y], f = self.get_transform()
+            results['img'] = self.transform(img, map_x, map_y, is_mask = False)
+            for key in results.get('seg_fields', []):
+                results[key] = self.transform(results[key], map_x, map_y, is_mask = True)
+            results['focal_distance'] = f
+            results['img_shape'] = results['img'].shape[:-1]
+            results['distorted'] = True
+            results['fisheye_bbox'] = self.bbox_dict[f]
+        else:
+            results['distorted'] = False
+            bbox = [[0,0],[img.shape[1], img.shape[0]]]
+            results['fisheye_bbox'] = bbox
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(maps_probability={self.maps_probability},'
+        repr_str += f'(transform_probability={self.transform_probability},'
+        repr_str += f"input_shape='{self.input_shape}',"
+        repr_str += f"output_shape='{self.output_shape}')"
         return repr_str
