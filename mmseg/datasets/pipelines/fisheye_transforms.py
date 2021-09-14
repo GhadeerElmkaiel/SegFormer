@@ -15,7 +15,7 @@ class RandomFisheyeCrop(object):
             occupy.
     """
 
-    def __init__(self,  bbox = None, prob = 1.0, part_x = 1.0, part_y = 1.0, max_dx = 0, max_dy = 0, part_x_range = None, part_y_range = None, dx_range = None, dy_range = None, palette=False):
+    def __init__(self,  bbox = None, prob = 1.0, part_x = 1.0, part_y = 1.0, max_dx = 0, max_dy = 0, part_x_range = None, part_y_range = None, dx_range = None, dy_range = None, num_classes=6, palette=False):
         if bbox:
             if not self.checkBBOX(bbox):
                 raise  AssertionError("BBox has to be greater than 1 in width and height. It also should have the form of [[Top Left X, Top Left Y],[Right Bottom X, Right Bottom Y]]")
@@ -71,6 +71,10 @@ class RandomFisheyeCrop(object):
             self.part_y_range = [1e-3, part_y]
         else:
             raise AssertionError("There should be at least on of part_y or part_y_range")
+        if num_classes is None:
+            raise AssertionError("num_classes should be a number!")
+        else:
+            self.num_classes = int(num_classes)
         self.palette = palette
         
         
@@ -152,7 +156,10 @@ class RandomFisheyeCrop(object):
         return result
     
     def crop(self, pic, crop, pad, is_mask = False):
-        color = [255*is_mask, 255*is_mask, 255*is_mask]
+        if self.palette:
+            color = self.num_classes*is_mask
+        else:
+            color = [255*is_mask, 255*is_mask, 255*is_mask]
         cropped = cv2.copyMakeBorder(pic[crop[0]:crop[1],crop[2]:crop[3],...], *pad, cv2.BORDER_CONSTANT, value = color)
         return cropped
     
@@ -168,7 +175,7 @@ class RandomFisheyeCrop(object):
                 updated according to crop size.
         """
 
-        self.cropped = np.random.rand()<self.prob and results['distorted']
+        self.cropped = np.random.rand()<self.prob and results.get('distorted')
         if(self.cropped ):
             if('fisheye_bbox' in results.keys()):
                 if self.checkBBOX(results['fisheye_bbox']):
@@ -200,7 +207,8 @@ class RandomFisheyeShift(object):
             occupy.
     """
 
-    def __init__(self,  bbox = None, prob = 1.0, max_dx = 0, max_dy = 0, dx_range = None, dy_range = None, palette=False):
+    def __init__(self,  bbox = None, prob = 1.0, max_dx = 0, max_dy = 0, dx_range = None, dy_range = None, num_classes=6, palette=False):
+
         if bbox:
             if not self.checkBBOX(bbox):
                 raise  AssertionError("BBox has to be greater than 1 in width and height. It also should have the form of [[Top Left X, Top Left Y],[Right Bottom X, Right Bottom Y]]")
@@ -229,6 +237,10 @@ class RandomFisheyeShift(object):
             self.dy_range = [0, np.round(abs(max_dy)).astype('int')+1]
         else:
             raise AssertionError("There should be at least on of max_dy or dy_range")
+        if num_classes is None:
+            raise AssertionError("num_classes should be a number!")
+        else:
+            self.num_classes = int(num_classes)
         self.palette = palette
         
         
@@ -259,7 +271,7 @@ class RandomFisheyeShift(object):
         else:
             dx_size = ( pic.shape[0],abs(dx), 3)
             dy_size = ( abs(dy),pic.shape[1], 3)
-        color = is_mask*255
+        color = is_mask*(255 if not self.palette else self.num_classes)
         if(dx<0):
             pic = pic[ :,abs(dx):,...]
             pic = np.hstack([pic, color*np.ones(dx_size, dtype = pic.dtype)])
@@ -310,7 +322,7 @@ class RandomFisheyeShift(object):
         Returns:
             dict: Randomly shift results.
         """
-        self.shifted = np.random.rand()<self.prob and results['distorted']
+        self.shifted = np.random.rand()<self.prob and results.get('distorted')
         if(self.shifted):
             if('fisheye_bbox' in results.keys()):
                 if self.checkBBOX(results['fisheye_bbox']):
@@ -428,6 +440,7 @@ class LoadFisheyeImageFromFile(object):
             std=np.ones(num_channels, dtype=np.float32),
             to_rgb=False)
         results['fisheye_bbox'] = self.bbox
+        results['distorted'] = True
         return results
 
     def __repr__(self):
@@ -441,10 +454,10 @@ class LoadFisheyeImageFromFile(object):
 @PIPELINES.register_module()
 class DistortPinholeToFisheye(object):
     """Distort pinhole image to fisheye image with random focal image.
-
+​
     Required keys are "img", "mask", "seg_fields"  Added or updated keys are  "img", "mask",
     "img_shape" (same as `img_shape`) and focal_distance.
-
+​
     Args:
         path_to_maps_dict_pickle : Path to dict with maps for random transforms. 
         Dict has following structure: key = focal_distance, value = [map_x, map_y]
@@ -453,12 +466,17 @@ class DistortPinholeToFisheye(object):
         output_shape : shape of output image
     """
 
-    def __init__(self, focal_distances = None, maps_probability = None, transform_probability = 1,  input_shape = (720,1280), output_shape = (1200,1920)):
+    def __init__(self, focal_distances = None, maps_probability = None, transform_probability = 1,  input_shape = (720,1280), output_shape = (1200,1920), num_classes=6, palette = False):
         self.focal_distances = focal_distances
         self.maps_probability = maps_probability
         self.transform_probability = transform_probability
         self.input_shape = input_shape
         self.output_shape = output_shape
+        if num_classes is None:
+            raise AssertionError("num_classes should be a number!")
+        else:
+            self.num_classes = int(num_classes)
+        self.palette = palette
         if(not focal_distances):
             self.maps_probability = []
             return
@@ -521,22 +539,35 @@ class DistortPinholeToFisheye(object):
         f = np.random.choice(list(self.maps_dict.keys()), p=self.maps_probability)
         return self.maps_dict[f], f
     
-    
-    
+     
     def transform(self, img, map_x, map_y, is_mask = False):
-        bkg_color = np.ones(3)*255*is_mask
-        res = np.hstack((img, np.zeros((img.shape[0], 1, 3), dtype=np.uint8)))
-        res[0, img.shape[1]] = bkg_color
-        res = np.array(res[(map_y, map_x)])
-        res = res.reshape(self.shape[0], self.shape[1], 3)
+        if(self.palette):
+            if(is_mask):
+                bkg_color = self.num_classes
+                res = np.hstack((img, np.zeros((img.shape[0], 1), dtype=np.uint8)))
+                res[0, img.shape[1]] = bkg_color
+                res = np.array(res[(map_y, map_x)])
+                res = res.reshape(self.shape[0], self.shape[1])
+            else:
+                bkg_color = np.ones(3)*255*is_mask
+                res = np.hstack((img, np.zeros((img.shape[0], 1, 3), dtype=np.uint8)))
+                res[0, img.shape[1]] = bkg_color
+                res = np.array(res[(map_y, map_x)])
+                res = res.reshape(self.shape[0], self.shape[1], 3)
+        else:
+            bkg_color = np.ones(3)*255*is_mask
+            res = np.hstack((img, np.zeros((img.shape[0], 1, 3), dtype=np.uint8)))
+            res[0, img.shape[1]] = bkg_color
+            res = np.array(res[(map_y, map_x)])
+            res = res.reshape(self.shape[0], self.shape[1], 3)
         return res
 
     def __call__(self, results):
         """Call functions distort pinhole image to fisheye with random focal distance.
-
+​
         Args:
             results (dict): Result dict from :obj:`mmseg.CustomDataset`.
-
+​
         Returns:
             dict: The dict contains distorted image, mask and meta information.
         """

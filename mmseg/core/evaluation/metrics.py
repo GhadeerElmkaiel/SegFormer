@@ -45,7 +45,7 @@ def intersect_and_union(pred_label,
         label[label == 254] = 255
 
     mask = (label != ignore_index)
-    pred_label = pred_label[mask]
+    pred_label = pred_label[0][0][mask]
     label = label[mask]
 
     intersect = pred_label[pred_label == label]
