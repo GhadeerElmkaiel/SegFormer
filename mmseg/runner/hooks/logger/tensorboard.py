@@ -100,10 +100,12 @@ class TensorboardLoggerImagesHook(LoggerHook):
         if self.get_iter(runner) % self.img_interval == 0:
             img = self.logImages(runner.outputs['log_images'])
             self.writer.add_image('Original | Segmentation', img)
-        self.writer.add_scalar('Loss',
-                                runner.outputs['log_vars']['loss'], self.get_iter(runner))
-        self.writer.add_scalar('Accuracy',
-                                runner.outputs['log_vars']['decode.acc_seg'], self.get_iter(runner))
+        tags = self.get_loggable_tags(runner, allow_text=True)
+        for tag, val in tags.items():
+            if isinstance(val, str):
+                self.writer.add_text(tag, val, self.get_iter(runner))
+            else:
+                self.writer.add_scalar(tag, val, self.get_iter(runner))
 
     @master_only
     def after_run(self, runner):
@@ -111,8 +113,9 @@ class TensorboardLoggerImagesHook(LoggerHook):
 
     def logImages(self,log_images):
         if self.num_classes == 7:
-            #           -- Void --     -- Mirror --      -- FUO --      -- Glass --      -- OOP --     -- Floor --   -- background  --
-            palette = [[255,255,255],[102, 255, 102], [245, 147, 49], [51, 221, 255], [184, 61, 245], [250, 50, 83], [0, 0, 0]]
+            # #           -- Void --     -- Mirror --      -- FUO --      -- Glass --      -- OOP --     -- Floor --   -- background  --
+            # palette = [[255,255,255],[102, 255, 102], [245, 147, 49], [51, 221, 255], [184, 61, 245], [250, 50, 83], [0, 0, 0]]
+            palette = [[102, 255, 102], [51, 221, 255], [245, 147, 49], [184, 61, 245], [250, 50, 83], [0, 0, 0],[255,255,255]]
         elif self.num_classes == 6:
             #           -- Mirror --      -- Glass --      -- FUO --      -- OOP --     -- Floor --   -- background  --
             palette = [[102, 255, 102], [51, 221, 255], [245, 147, 49], [184, 61, 245], [250, 50, 83], [0, 0, 0]]
@@ -126,7 +129,7 @@ class TensorboardLoggerImagesHook(LoggerHook):
 
         # Recolor the resulted image to match the needed colors
         for label, color in enumerate(palette):
-            color_seg.permute(1,0,2,3)[:,(seg.permute(1,0,2,3)==label).squeeze()] = color.view(-1,1)
+            color_seg.permute(1,0,2,3)[:,(seg.permute(1,0,2,3)==label).squeeze(axis=0)] = color.view(-1,1)
 
         img_resize = torchvision.transforms.Resize(size=log_images['original'].shape[-2:])
         img_denormalize = torchvision.transforms.Normalize(mean=[-123.675/58.395, -116.28/57.12, -103.53/57.375], std=[1./58.395, 1./57.12, 1./57.375], inplace=True)
