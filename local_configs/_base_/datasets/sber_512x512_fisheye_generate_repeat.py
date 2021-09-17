@@ -21,16 +21,15 @@ train_pipeline = [
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
+    dict(type='DistortPinholeToFisheye', transform_probability = 1.,  input_shape = (720,1280), output_shape = (1200,1920), num_classes=6,
+        focal_distances = [100], maps_probability = None, palette=True),
     dict(
         type='MultiScaleFlipAug',
         img_scale=(512, 512),
         # img_ratios=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
         flip=False,
         transforms=[
-            dict(type='DistortPinholeToFisheye', transform_probability = 1.,  input_shape = (720,1280), output_shape = (1200,1920), num_classes=6,
-                focal_distances = [80], maps_probability = None, palette=True),
-            dict(type='RandomFisheyeCrop', prob=1, num_classes=6, dy_range=(30,31),
-                part_x_range=(1.29, 1.31), part_y_range=(0.89, 0.89), palette=True),
+            
             dict(type='Resize', keep_ratio=True),
             dict(type='RandomFlip'),
             dict(type='Normalize', **img_norm_cfg),

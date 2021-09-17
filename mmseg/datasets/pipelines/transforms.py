@@ -448,7 +448,8 @@ class Resize(object):
 
         if 'scale' not in results:
             self._random_scale(results)
-        self._resize_img(results)
+        if 'img' in results:
+            self._resize_img(results)
         self._resize_seg(results)
         return results
 

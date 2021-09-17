@@ -39,7 +39,7 @@ log_config = dict(
     interval=1,
     hooks=[
         dict(type='TextLoggerHook', by_epoch=False),
-        dict(type='TensorboardLoggerImagesHook', num_classes=7, img_interval=1)
+        dict(type='TensorboardLoggerImagesHook', num_classes=7, img_interval=5)
     ])
 
 # optimizer

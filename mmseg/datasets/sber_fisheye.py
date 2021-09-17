@@ -7,15 +7,17 @@ from mmcv.utils import print_log
 from terminaltables import AsciiTable
 import os
 import mmcv
+import os.path as osp
+from mmcv.image import imresize
 
 @DATASETS.register_module()
 class SberbankDatasetFisheye(CustomDataset):
     """Sber Fisheye.
     """
     CLASSES = (
-        'Glass', 'Mirror', 'Other optical surface', 'Floor', 'Floor under obstacle', 'Background', 'Void')
-
-    PALETTE = [[102, 255, 102], [51, 221, 255], [245, 147, 49], [184, 61, 245], [250, 50, 83], [0, 0, 0],[255,255,255]]
+        'Mirror', 'Glass', 'FUO', 'OOS', 'Floor', 'Background', 'Void')
+    PALETTE = [[102, 255, 102], [51, 221, 255], [245, 147, 49], [184, 61, 245], 
+        [250, 50, 83], [0, 0, 0],[255,255,255]]
 
     def __init__(self, **kwargs):
         super(SberbankDatasetFisheye, self).__init__(
@@ -23,6 +25,12 @@ class SberbankDatasetFisheye(CustomDataset):
             seg_map_suffix='.png',
             reduce_zero_label=False,
             **kwargs)
+        for t in self.pipeline.transforms:
+                if 'DistortPinholeToFisheye' in str(t):
+                    self.distort_transform = t
+                    break
+        else:
+            self.distort_transform = None
 
     def evaluate(self,
                  results,
@@ -102,3 +110,39 @@ class SberbankDatasetFisheye(CustomDataset):
             for file_name in results:
                 os.remove(file_name)
         return eval_results
+
+    def get_gt_seg_maps(self, efficient_test=False):
+        """Get ground truth segmentation maps for evaluation."""
+        gt_seg_maps = []
+        for img_info in self.img_infos:
+            results = dict(img_info=img_info, ann_info=img_info['ann'])
+            self.pre_pipeline(results)
+            seg_map = osp.join(self.ann_dir, results['ann_info']['seg_map'])
+            if efficient_test:
+                gt_seg_map = seg_map
+            else:
+                gt_seg_map = mmcv.imread(
+                    seg_map, flag='unchanged', backend='pillow')
+            results['gt_semantic_seg'] = gt_seg_map
+            results['seg_fields'] = ['gt_semantic_seg']
+            results['scale'] = 1.0
+            results['img_shape'] = gt_seg_map.shape
+            if self.distort_transform is not None:
+                orig_shape = gt_seg_map.shape
+                results = self.distort_transform(results)
+                results['gt_semantic_seg'] = imresize(results['gt_semantic_seg'], orig_shape[::-1])
+            gt_seg_maps.append(results['gt_semantic_seg'])
+        return gt_seg_maps
+
+    def prepare_test_img(self, idx):
+        """Get testing data after pipeline.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Testing data after pipeline with new keys intorduced by
+                piepline.
+        """
+
+        return self.prepare_train_img(idx)

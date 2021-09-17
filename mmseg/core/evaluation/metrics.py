@@ -55,7 +55,6 @@ def intersect_and_union(pred_label,
         pred_label, bins=np.arange(num_classes + 1))
     area_label, _ = np.histogram(label, bins=np.arange(num_classes + 1))
     area_union = area_pred_label + area_label - area_intersect
-
     return area_intersect, area_union, area_pred_label, area_label
 
 
@@ -213,6 +212,9 @@ def eval_metrics(results,
                                                      reduce_zero_label)
     all_acc = total_area_intersect.sum() / total_area_label.sum()
     acc = total_area_intersect / total_area_label
+    for i, class_acc in enumerate(acc):
+        if np.isnan(class_acc) and total_area_pred_label[i] > 0:
+            acc[i] = 0.
     ret_metrics = [all_acc, acc]
     for metric in metrics:
         if metric == 'mIoU':

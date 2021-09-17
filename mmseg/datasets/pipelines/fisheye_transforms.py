@@ -571,21 +571,22 @@ class DistortPinholeToFisheye(object):
         Returns:
             dict: The dict contains distorted image, mask and meta information.
         """
-        img = results['img']
-        if(sum(self.maps_probability) != 0 and np.random.rand() < self.transform_probability):
-            
+        if(sum(self.maps_probability) != 0 and np.random.rand() < self.transform_probability): 
             [map_x, map_y], f = self.get_transform()
-            results['img'] = self.transform(img, map_x, map_y, is_mask = False)
+            if 'img' in results: 
+                results['img'] = self.transform(results['img'], map_x, map_y, is_mask = False)
+                results['img_shape'] = results['img'].shape[:-1]
             for key in results.get('seg_fields', []):
                 results[key] = self.transform(results[key], map_x, map_y, is_mask = True)
             results['focal_distance'] = f
-            results['img_shape'] = results['img'].shape[:-1]
             results['distorted'] = True
             results['fisheye_bbox'] = self.bbox_dict[f]
         else:
             results['distorted'] = False
-            bbox = [[0,0],[img.shape[1], img.shape[0]]]
-            results['fisheye_bbox'] = bbox
+            if 'img' in results:
+                results['fisheye_bbox'] = [[0,0],[results['img'].shape[1], results['img'].shape[0]]]
+            else:
+                results['fisheye_bbox'] = None
         return results
 
     def __repr__(self):

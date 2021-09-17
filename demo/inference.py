@@ -46,7 +46,7 @@ def main():
         palette = [[255,255,255],[102, 255, 102], [245, 147, 49], [51, 221, 255], [184, 61, 245], [250, 50, 83], [0, 0, 0]]
     elif int(args.num_classes) == 6:
         #           -- Mirror --      -- Glass --      -- FUO --      -- OOP --     -- Floor --   -- background  --
-        palette = [[102, 255, 102], [51, 221, 255], [245, 147, 49], [184, 61, 245], [250, 50, 83], [0, 0, 0]]
+        palette = [[102, 255, 102], [51, 221, 255], [245, 147, 49], [184, 61, 245], [250, 50, 83], [0, 0, 0], [255, 255, 255]]
     else:
         raise AssertionError('Wrong number of classes')
     print(f"Number of classes was set to {args.num_classes}")

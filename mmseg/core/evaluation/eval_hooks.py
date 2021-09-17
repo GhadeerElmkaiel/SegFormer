@@ -42,13 +42,6 @@ class EvalHook(Hook):
         """Call evaluate function of dataset."""
         eval_res = self.dataloader.dataset.evaluate(
             results, logger=runner.logger, **self.eval_kwargs)
-
-        # runner.tb_writer.add_scalar('mIoU',
-        #                     eval_res['mIoU'], runner.iter)
-        # runner.tb_writer.add_scalar('mAccuracy',
-        #                     eval_res['mAcc'], runner.iter)
-        # runner.tb_writer.add_scalar('aAccuracy',
-        #                     eval_res['aAcc'], runner.iter)
         for name, val in eval_res.items():
             runner.log_buffer.output[name] = val
         runner.log_buffer.ready = True
