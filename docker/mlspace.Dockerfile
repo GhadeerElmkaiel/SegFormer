@@ -1,5 +1,5 @@
-FROM registry.aicloud.sbcp.ru/base/jupyter-cuda10.1-cudnn8-tf2.3.0-gpu
-#FROM cr.msk.sbercloud.ru/aicloud-jupyter/jupyter-cuda10.1-tf2.3.0-gpu-mlspace:latest
+#FROM registry.aicloud.sbcp.ru/base/jupyter-cuda10.1-cudnn8-tf2.3.0-gpu
+FROM cr.msk.sbercloud.ru/aicloud-jupyter/jupyter-cuda10.1-tf2.3.0-gpu-mlspace:latest
 
 USER root
 
@@ -9,34 +9,9 @@ COPY . /home/jovyan/segformer/
 
 WORKDIR /home/jovyan/segformer
 
-RUN pip3 install -r requirements/build.txt
-RUN pip3 install  -e . 
-
-USER jovyan
+RUN pip install torch==1.7.1+cu101 torchvision==0.8.2+cu101 -f https://download.pytorch.org/whl/torch_stable.html
+RUN pip install -r requirements/build_ml_space.txt
 
 
-#RUN groupadd --gid 1000 node && useradd --uid 1000 --gid 1000 --create-home --shell /bin/bash juvyan
 
-# WORKDIR /
-# COPY ./docker/script.sh /home/juvyan
-# RUN chmod +x /home/juvyan/script.sh
 
-# USER juvyan 1000
-
-# WORKDIR /home/juvyan
-
-# CMD ["/home/juvyan/script.sh"]
-
-#RUN groupadd --gid 1000 node && useradd --uid 1000 --gid 1000 --create-home --shell /bin/bash jovyan
-#
-#WORKDIR /
-#COPY ./docker/script.sh /home/jovyan
-#RUN chmod +x /home/jovyan/script.sh
-#
-#USER jovyan 1000
-#
-#WORKDIR /home/jovyan
-#
-#CMD ["/home/jovyan/script.sh"]
-
-#CMD ["bash"]

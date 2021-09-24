@@ -5,6 +5,9 @@ _base_ = [
     '../../_base_/schedules/schedule_160k_adamw.py'
 ]
 
+train_img_norm_cfg = dict(
+    mean=[111.777, 112.291, 107.274], std=[13.032, 11.905, 13.698], to_rgb=True)
+
 # model settings
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 find_unused_parameters = True
@@ -31,9 +34,9 @@ model = dict(
     test_cfg=dict(mode='whole'))
 
 # data
-data = dict(samples_per_gpu=6, workers_per_gpu=6)
+data = dict(samples_per_gpu=2, workers_per_gpu=1)
 checkpoint_config = dict(by_epoch=False, interval=16000)
-evaluation = dict(interval=16000, metric='mIoU')
+evaluation = dict(interval=1, metric='mIoU')
 
 # optimizer
 optimizer = dict(_delete_=True, type='AdamW', lr=0.00006, betas=(0.9, 0.999), weight_decay=0.01,
@@ -49,3 +52,10 @@ lr_config = dict(_delete_=True, policy='poly',
                  power=1.0, min_lr=0.0, by_epoch=False)
 
 
+log_config = dict(
+    interval=1,
+    hooks=[
+        dict(type='TextLoggerHook', by_epoch=False),
+        dict(type='TensorboardLoggerImagesHook', num_classes=7, img_interval=1,
+            norm_cfg=train_img_norm_cfg)
+    ])
