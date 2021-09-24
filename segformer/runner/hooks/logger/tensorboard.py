@@ -114,6 +114,7 @@ class TensorboardLoggerImagesHook(LoggerHook):
         self.writer.close()
 
     def logImages(self,log_images):
+        cuda_device = log_images['original'].device
         if self.num_classes == 7:
             # #           -- Void --     -- Mirror --      -- FUO --      -- Glass --      -- OOP --     -- Floor --   -- background  --
             # palette = [[255,255,255],[102, 255, 102], [245, 147, 49], [51, 221, 255], [184, 61, 245], [250, 50, 83], [0, 0, 0]]
@@ -123,25 +124,31 @@ class TensorboardLoggerImagesHook(LoggerHook):
             palette = [[102, 255, 102], [51, 221, 255], [245, 147, 49], [184, 61, 245], [250, 50, 83], [0, 0, 0]]
         else:
             raise AssertionError('Wrong number of classes')
-        palette = torch.Tensor(palette).to(torch.uint8)
-
+        palette = torch.Tensor(palette).to(cuda_device).to(torch.uint8)
         seg = torch.argmax(log_images['prediction'],1, keepdims=True).to(torch.uint8)
 
-        color_seg = torch.zeros((seg.shape[0],3,*seg.shape[-2:],), dtype=torch.uint8)
-
-        # Recolor the resulted image to match the needed colors
+        color_seg = torch.zeros((seg.shape[0],3,*seg.shape[-2:],), dtype=torch.uint8, device=cuda_device)
+        
+        # Recolor the resulted image to match the needed color
         for label, color in enumerate(palette):
             color_seg.permute(1,0,2,3)[:,(seg.permute(1,0,2,3)==label).squeeze(axis=0)] = color.view(-1,1)
-
-        img_resize = torchvision.transforms.Resize(size=log_images['original'].shape[-2:])
+        
+        color_seg = torch.nn.functional.interpolate(color_seg.to(torch.float32), size=log_images['original'].shape[-2:], mode='bilinear').to(torch.uint8)
         if self.norm_cfg is not None:
             mean = torch.Tensor(self.norm_cfg['mean'])
             std = torch.Tensor(self.norm_cfg['std'])
             mean = -mean / std
             std = 1 / std
             img_denormalize = torchvision.transforms.Normalize(mean=mean, std=std, inplace=True)
-            original_img = img_denormalize(log_images['original'])
+            original_img = torch.zeros_like(log_images['original'])
+            if log_images['original'].ndim == 3:
+                original_img = img_denormalize(log_images['original'])
+            elif log_images['original'].ndim == 4:
+                for i in range(log_images['original'].shape[0]):
+                    original_img[i,...] = img_denormalize(log_images['original'][i,...])
+            else:
+                original_img = log_images['original']
         else:
             original_img = log_images['original']
-        return torchvision.utils.make_grid(torch.cat([original_img.to(torch.uint8).cpu(),img_resize(color_seg).to(torch.uint8)]),
+        return torchvision.utils.make_grid(torch.cat([original_img.to(torch.uint8),color_seg.to(torch.uint8)]),
                                             nrow=log_images['original'].shape[0], padding=10)
