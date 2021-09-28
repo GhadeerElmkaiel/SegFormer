@@ -12,7 +12,7 @@ model = dict(
     type='EncoderDecoder',
     pretrained='/home/jovyan/segformer/pretrained/mit_b3.pth',
     backbone=dict(
-        type='mit_b5',
+        type='mit_b3',
         style='pytorch'),
     decode_head=dict(
         type='SegFormerheadWithEdges',
@@ -31,9 +31,9 @@ model = dict(
     test_cfg=dict(mode='whole'))
 
 # data
-data = dict(samples_per_gpu=3, workers_per_gpu=3)
-checkpoint_config = dict(by_epoch=False, interval=16000)
-evaluation = dict(interval=16000, metric='mIoU')
+data = dict(samples_per_gpu=8, workers_per_gpu=8)
+checkpoint_config = dict(by_epoch=False, interval=4000)
+evaluation = dict(interval=4000, metric='mIoU')
 
 # optimizer
 optimizer = dict(_delete_=True, type='AdamW', lr=0.00006, betas=(0.9, 0.999), weight_decay=0.01,
