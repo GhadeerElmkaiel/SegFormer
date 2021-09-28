@@ -1,8 +1,8 @@
 _base_ = [
-    '../../_base_/models/segformer.py',
-    '../../_base_/datasets/sber_512x512_fisheye_generate_repeat.py',
-    '../../_base_/default_runtime.py',
-    '../../_base_/schedules/schedule_160k_adamw.py'
+    '/home/jovyan/segformer/local_configs/_base_/models/segformer.py',
+    '/home/jovyan/segformer/local_configs/_base_/datasets/sber_512x512_fisheye_generate_repeat.py',
+    '/home/jovyan/segformer/local_configs/_base_/default_runtime.py',
+    '/home/jovyan/segformer/local_configs/_base_/schedules/schedule_160k_adamw.py'
 ]
 
 # model settings
@@ -10,7 +10,7 @@ norm_cfg = dict(type='SyncBN', requires_grad=True)
 find_unused_parameters = True
 model = dict(
     type='EncoderDecoder',
-    pretrained='pretrained/mit_b5.pth',
+    pretrained='/home/jovyan/segformer/pretrained/mit_b5.pth',
     backbone=dict(
         type='mit_b5',
         style='pytorch'),
@@ -31,7 +31,7 @@ model = dict(
     test_cfg=dict(mode='whole'))
 
 # data
-data = dict(samples_per_gpu=4, workers_per_gpu=2)
+data = dict(samples_per_gpu=3, workers_per_gpu=3)
 checkpoint_config = dict(by_epoch=False, interval=16000)
 evaluation = dict(interval=16000, metric='mIoU')
 
@@ -52,7 +52,8 @@ log_config = dict(
     interval=1,
     hooks=[
         dict(type='TextLoggerHook', by_epoch=False),
-        dict(type='TensorboardLoggerImagesHook', num_classes=7, img_interval=1000)
+        dict(type='TensorboardLoggerImagesHook', num_classes=7, img_interval=1000,
+                    log_dir='/home/jovyan/segformer/work_dirs/tf_board')
     ])
 
 

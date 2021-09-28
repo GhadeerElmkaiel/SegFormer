@@ -1,6 +1,6 @@
 # dataset settings
 dataset_type = 'SberbankDatasetFisheye'
-data_root = 'data/SberMerged/'
+data_root = '/home/jovyan/SberMerged/'
 train_img_norm_cfg = dict(
     mean=[111.777, 112.291, 107.274], std=[13.032, 11.905, 13.698], to_rgb=True)
 test_img_norm_cfg = dict(
