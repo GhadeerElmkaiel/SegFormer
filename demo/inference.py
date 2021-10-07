@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 import os
 
 import torch
-from mmseg.apis import inference_segmentor, init_segmentor, show_result_pyplot
+from mmseg.apis import inference_segmentor, inference_segmentor_with_depth, init_segmentor, show_result_pyplot
 from mmseg.core.evaluation import get_palette
 import mmcv
 from PIL import Image
@@ -15,6 +15,9 @@ def main():
     parser.add_argument('config', help='Config file') 
     parser.add_argument('checkpoint', help='Checkpoint file')
     parser.add_argument('--images', help='Images path', default='data/SberMerged/test/images/')
+    parser.add_argument('--depth', help='Depth files path', default='data/SberMerged/test/depth/')
+    parser.add_argument('--images-suf', help='Suffix of image files', default='.png')
+    parser.add_argument('--depth-suf', help='Suffix of depth files', default='.npy')
     parser.add_argument('--save-path', help='Path to save resulted images', default='data/NN_results/')
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
@@ -47,16 +50,19 @@ def main():
         palette = [[102, 255, 102], [51, 221, 255], [245, 147, 49], [184, 61, 245], [250, 50, 83], [0, 0, 0], [255, 255, 255]]
     else:
         raise AssertionError('Wrong type of classes')
-    print(f"Type of classes was set to {args.num_classes}")
+    print(f"Type of classes was set to {args.classes_type}")
     print(f"Flag for saving tensors was set to {args.save_tensor}")
     palette = np.array(palette)
 
     bar = tqdm.tqdm(total=len(images), desc="Making masks...")
     for name in images:
         path_to_img = args.images + name
+        path_to_depth = path_to_img.replace(args.images, args.depth)
+        path_to_depth = path_to_depth.replace(args.images_suf, args.depth_suf)
 
         # Getting the results from the model
-        result, output = inference_segmentor(model, path_to_img)
+        result, output = inference_segmentor_with_depth(model, path_to_img, path_to_depth)
+        # result, output = inference_segmentor(model, path_to_img)
         seg = result[0]
 
         color_seg = np.zeros((seg.shape[0], seg.shape[1], 3), dtype=np.uint8)

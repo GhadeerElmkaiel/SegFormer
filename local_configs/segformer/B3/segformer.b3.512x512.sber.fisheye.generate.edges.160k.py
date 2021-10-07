@@ -1,6 +1,6 @@
 _base_ = [
     '../../_base_/models/segformer.py',
-    '../../_base_/datasets/sber_512x512_repeat.py',
+    '../../_base_/datasets/sber_512x512_fisheye_generate_repeat.py',
     '../../_base_/default_runtime.py',
     '../../_base_/schedules/schedule_160k_adamw.py'
 ]
@@ -10,12 +10,12 @@ norm_cfg = dict(type='SyncBN', requires_grad=True)
 find_unused_parameters = True
 model = dict(
     type='EncoderDecoder',
-    pretrained='pretrained/mit_b2.pth',
+    pretrained='pretrained/mit_b3.pth',
     backbone=dict(
-        type='mit_b2',
+        type='mit_b3',
         style='pytorch'),
     decode_head=dict(
-        type='SegFormerHead',
+        type='SegFormerheadWithEdges',
         in_channels=[64, 128, 320, 512],
         in_index=[0, 1, 2, 3],
         feature_strides=[4, 8, 16, 32],
@@ -29,11 +29,12 @@ model = dict(
     # model training and testing settings
     train_cfg=dict(),
     # test_cfg=dict(mode='whole'))
-    test_cfg=dict(mode='slide', crop_size=(1024,1024), stride=(768,768)))
+    test_cfg=dict(mode='slide', crop_size=(512,512), stride=(384,384)))
 
 # data
-data = dict(samples_per_gpu=1)
-evaluation = dict(interval=20000, metric='mIoU')
+data = dict(samples_per_gpu=2, workers_per_gpu=2)
+checkpoint_config = dict(by_epoch=False, interval=16000)
+evaluation = dict(interval=16000, metric='mIoU')
 
 # optimizer
 optimizer = dict(_delete_=True, type='AdamW', lr=0.00006, betas=(0.9, 0.999), weight_decay=0.01,

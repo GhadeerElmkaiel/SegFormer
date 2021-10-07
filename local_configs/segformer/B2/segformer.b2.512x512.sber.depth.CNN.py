@@ -1,6 +1,6 @@
 _base_ = [
     '../../_base_/models/segformer.py',
-    '../../_base_/datasets/sber_512x512_repeat.py',
+    '../../_base_/datasets/sber_512x512_with_depth_CNN.py',
     '../../_base_/default_runtime.py',
     '../../_base_/schedules/schedule_160k_adamw.py'
 ]
@@ -9,16 +9,17 @@ _base_ = [
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 find_unused_parameters = True
 model = dict(
-    type='EncoderDecoder',
+    type='GeneralEncoderDecoder',
     pretrained='pretrained/mit_b2.pth',
     backbone=dict(
-        type='mit_b2',
-        style='pytorch'),
+        type='mit_depth_b2',
+        depth_embed_type='CNN',
+        weights_only_MVF=False),
     decode_head=dict(
-        type='SegFormerHead',
-        in_channels=[64, 128, 320, 512],
-        in_index=[0, 1, 2, 3],
-        feature_strides=[4, 8, 16, 32],
+        type='SegFormerheadWithDepthEdges',
+        in_channels=[64, 128, 320, 512, 64, 128, 320, 512],
+        in_index=[0, 1, 2, 3, 4, 5, 6, 7],
+        feature_strides=[4, 8, 16, 32, 4, 8, 16, 32],
         channels=128,
         dropout_ratio=0.1,
         num_classes=6,
@@ -28,12 +29,12 @@ model = dict(
         loss_decode=dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
     # model training and testing settings
     train_cfg=dict(),
-    # test_cfg=dict(mode='whole'))
-    test_cfg=dict(mode='slide', crop_size=(1024,1024), stride=(768,768)))
+    test_cfg=dict(mode='slide', crop_size=(512,512), stride=(384,384)))
 
 # data
-data = dict(samples_per_gpu=1)
-evaluation = dict(interval=20000, metric='mIoU')
+data = dict(samples_per_gpu=1, workers_per_gpu=2)
+# checkpoint_config = dict(by_epoch=False, interval=16000)
+evaluation = dict(interval=200000, metric='mIoU')
 
 # optimizer
 optimizer = dict(_delete_=True, type='AdamW', lr=0.00006, betas=(0.9, 0.999), weight_decay=0.01,
@@ -49,3 +50,12 @@ lr_config = dict(_delete_=True, policy='poly',
                  power=1.0, min_lr=0.0, by_epoch=False)
 
 
+init_kwargs = dict(config=dict(data=data, model=model, optimizer=optimizer))
+
+log_config = dict(
+    interval=10,
+    hooks=[
+        dict(type='TextLoggerHook', by_epoch=False),
+        dict(type='TensorboardLoggerHook', by_epoch=False),
+        dict(type='WandbLoggerHook', by_epoch=False, init_kwargs=init_kwargs)
+    ])

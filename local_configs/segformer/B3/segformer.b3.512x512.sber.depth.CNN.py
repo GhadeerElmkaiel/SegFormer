@@ -1,6 +1,6 @@
 _base_ = [
     '../../_base_/models/segformer.py',
-    '../../_base_/datasets/sber_512x512_repeat.py',
+    '../../_base_/datasets/sber_512x512_with_depth_CNN.py',
     '../../_base_/default_runtime.py',
     '../../_base_/schedules/schedule_160k_adamw.py'
 ]
@@ -9,16 +9,17 @@ _base_ = [
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 find_unused_parameters = True
 model = dict(
-    type='EncoderDecoder',
-    pretrained='pretrained/mit_b2.pth',
+    type='GeneralEncoderDecoder',
+    pretrained='pretrained/mit_b3.pth',
     backbone=dict(
-        type='mit_b2',
-        style='pytorch'),
+        type='mit_depth_b3',
+        depth_embed_type='CNN',
+        weights_only_MVF=False),
     decode_head=dict(
-        type='SegFormerHead',
-        in_channels=[64, 128, 320, 512],
-        in_index=[0, 1, 2, 3],
-        feature_strides=[4, 8, 16, 32],
+        type='SegFormerheadWithDepthEdges',
+        in_channels=[64, 128, 320, 512, 64, 128, 320, 512],
+        in_index=[0, 1, 2, 3, 4, 5, 6, 7],
+        feature_strides=[4, 8, 16, 32, 4, 8, 16, 32],
         channels=128,
         dropout_ratio=0.1,
         num_classes=6,
@@ -29,11 +30,11 @@ model = dict(
     # model training and testing settings
     train_cfg=dict(),
     # test_cfg=dict(mode='whole'))
-    test_cfg=dict(mode='slide', crop_size=(1024,1024), stride=(768,768)))
+    test_cfg=dict(mode='slide', crop_size=(512,512), stride=(384,384)))
 
 # data
 data = dict(samples_per_gpu=1)
-evaluation = dict(interval=20000, metric='mIoU')
+evaluation = dict(interval=200000, metric='mIoU')
 
 # optimizer
 optimizer = dict(_delete_=True, type='AdamW', lr=0.00006, betas=(0.9, 0.999), weight_decay=0.01,

@@ -13,11 +13,12 @@ from .mapillary import MapillaryDataset
 from .cocostuff import CocoStuff
 from .sber import SberbankDataset
 from .sber_fisheye import SberbankDatasetFisheye
+from .sber_with_depth import SberbankDatasetWithDepth
 
 __all__ = [
     'CustomDataset', 'build_dataloader', 'ConcatDataset', 'RepeatDataset',
     'DATASETS', 'build_dataset', 'PIPELINES', 'CityscapesDataset',
     'PascalVOCDataset', 'ADE20KDataset', 'PascalContextDataset',
     'ChaseDB1Dataset', 'DRIVEDataset', 'HRFDataset', 'STAREDataset', 'MapillaryDataset', 'CocoStuff',
-    'SberbankDataset', 'SberbankDatasetFisheye'
+    'SberbankDataset', 'SberbankDatasetFisheye', 'SberbankDatasetWithDepth'
 ]

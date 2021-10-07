@@ -1,6 +1,6 @@
 from .compose import Compose
 from .formating import (Collect, ImageToTensor, ToDataContainer, ToTensor,
-                        Transpose, to_tensor)
+                        Transpose, to_tensor, WithDepthFormatBundle)
 from .loading import LoadAnnotations, LoadImageFromFile
 from .test_time_aug import MultiScaleFlipAug
 from .transforms import (AlignedResize, CLAHE, AdjustGamma, Normalize, Pad,
@@ -10,7 +10,7 @@ from .fisheye_transforms import RandomFisheyeCrop, RandomFisheyeShift, LoadFishe
 
 __all__ = [
     'Compose', 'to_tensor', 'ToTensor', 'ImageToTensor', 'ToDataContainer',
-    'Transpose', 'Collect', 'LoadAnnotations', 'LoadImageFromFile',
+    'Transpose', 'Collect', 'WithDepthFormatBundle', 'LoadAnnotations', 'LoadImageFromFile',
     'MultiScaleFlipAug', 'AlignedResize', 'Resize', 'RandomFlip', 'Pad', 'RandomCrop',
     'Normalize', 'SegRescale', 'PhotoMetricDistortion', 'RandomRotate',
     'AdjustGamma', 'CLAHE', 'Rerange', 'RGB2Gray',

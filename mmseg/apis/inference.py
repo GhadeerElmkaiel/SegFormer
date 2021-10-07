@@ -86,6 +86,8 @@ def inference_segmentor(model, img):
     test_pipeline = [LoadImage()] + cfg.data.test.pipeline[1:]
     test_pipeline = Compose(test_pipeline)
     # prepare data
+
+
     data = dict(img=img)
     data = test_pipeline(data)
     data = collate([data], samples_per_gpu=1)
@@ -117,10 +119,68 @@ def show_result_pyplot(model, img, result, palette=None, fig_size=(15, 10), name
     if hasattr(model, 'module'):
         model = model.module
 
-    # print("Palette: ", palette)
-    # print("Palette.shape: ", len(palette))
-    # print("img: ", img)
-    # print("result: ", result)
+
+    img = model.show_result(img, result, palette=palette, show=False)
+    plt.figure(figsize=fig_size)
+    plt.imshow(mmcv.bgr2rgb(img))
+    plt.show()
+    if name!=None:
+        image = Image.fromarray(mmcv.bgr2rgb(img))
+        image.save(name)
+
+
+def inference_segmentor_with_depth(model, img, depth):
+    """Inference image(s) with the segmentor.
+
+    Args:
+        model (nn.Module): The loaded segmentor.
+        imgs (str/ndarray or list[str/ndarray]): Either image files or loaded
+            images.
+
+    Returns:
+        (list[Tensor]): The segmentation result.
+    """
+    cfg = model.cfg
+    device = next(model.parameters()).device  # model device
+    if isinstance(device, torch.device):
+        device = device.index
+
+    # build the data pipeline
+    test_pipeline = [LoadImage()] + cfg.data.test.pipeline[1:]
+    test_pipeline = Compose(test_pipeline)
+    # prepare data
+
+    data = dict(img=img, depth_info=depth)
+    data = test_pipeline(data)
+    data = collate([data], samples_per_gpu=1)
+    if next(model.parameters()).is_cuda:
+        # scatter to specified GPU
+        data = scatter(data, [device])[0]
+    else:
+        data['img_metas'] = [i.data[0] for i in data['img_metas']]
+
+    # forward the model
+    with torch.no_grad():
+        result = model(return_loss=False, rescale=True, **data)
+
+    return result
+
+
+def show_result_pyplot(model, img, result, palette=None, fig_size=(15, 10), name=None):
+    """Visualize the segmentation results on the image.
+
+    Args:
+        model (nn.Module): The loaded segmentor.
+        img (str or np.ndarray): Image filename or loaded image.
+        result (list): The segmentation result.
+        palette (list[list[int]]] | None): The palette of segmentation
+            map. If None is given, random palette will be generated.
+            Default: None
+        fig_size (tuple): Figure size of the pyplot figure.
+    """
+    if hasattr(model, 'module'):
+        model = model.module
+
 
     img = model.show_result(img, result, palette=palette, show=False)
     plt.figure(figsize=fig_size)

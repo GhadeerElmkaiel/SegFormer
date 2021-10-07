@@ -17,7 +17,7 @@ from mmcv.runner.hooks import HOOKS as MMCV_HOOKS, Hook as MMCV_Hook
 from .log_buffer import LogBuffer
 from .priority import get_priority
 from .utils import get_time_str
-from torch.utils.tensorboard import SummaryWriter
+
 
 
 class BaseRunner(metaclass=ABCMeta):

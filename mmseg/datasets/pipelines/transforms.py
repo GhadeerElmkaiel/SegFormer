@@ -269,7 +269,8 @@ class Resize(object):
                  img_scale=None,
                  multiscale_mode='range',
                  ratio_range=None,
-                 keep_ratio=True):
+                 keep_ratio=True,
+                 apply_to_channels=None):
         if img_scale is None:
             self.img_scale = None
         else:
@@ -417,6 +418,17 @@ class Resize(object):
                 results['img'], results['scale'], return_scale=True)
         scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
                                 dtype=np.float32)
+
+
+        # Apply transformation for additional data streams
+        added_types = results.get('added_types', {})
+        if added_types!={}:
+            for key in added_types.keys():
+                if added_types[key]["apply_transforms"]:
+                    results[key] = mmcv.imrescale(
+                        results[key], results['scale'], return_scale=False)
+
+
         results['img'] = img
         results['img_shape'] = img.shape
         results['pad_shape'] = img.shape  # in case that there is no padding
@@ -506,6 +518,14 @@ class RandomFlip(object):
             results['img'] = mmcv.imflip(
                 results['img'], direction=results['flip_direction'])
 
+            # Apply flipping for additional data streams
+            added_types = results.get('added_types', {})
+            if added_types!={}:
+                for key in added_types.keys():
+                    if added_types[key]["apply_transforms"]:
+                        results[key] = mmcv.imflip(
+                            results[key], direction=results['flip_direction'])
+
             # flip segs
             for key in results.get('seg_fields', []):
                 # use copy() to make numpy stride positive
@@ -551,9 +571,29 @@ class Pad(object):
         if self.size is not None:
             padded_img = mmcv.impad(
                 results['img'], shape=self.size, pad_val=self.pad_val)
+
+            # Apply padding for additional data streams
+            # Note the padding value is different for each stream 
+            added_types = results.get('added_types', {})
+            if added_types!={}:
+                for key in added_types.keys():
+                    if added_types[key]["apply_transforms"]:
+                        results[key] = mmcv.impad(
+                            results[key], shape=self.size, pad_val=added_types[key]["pad_val"])
+
         elif self.size_divisor is not None:
             padded_img = mmcv.impad_to_multiple(
                 results['img'], self.size_divisor, pad_val=self.pad_val)
+
+            # Apply padding for additional data streams
+            # Note the padding value is different for each stream 
+            added_types = results.get('added_types', {})
+            if added_types!={}:
+                for key in added_types.keys():
+                    if added_types[key]["apply_transforms"]:
+                        results[key] = mmcv.impad_to_multiple(
+                            results[key], shape=self.size, pad_val=added_types[key]["pad_val"])
+
         results['img'] = padded_img
         results['pad_shape'] = padded_img.shape
         results['pad_fixed_size'] = self.size
@@ -616,7 +656,7 @@ class Normalize(object):
             dict: Normalized results, 'img_norm_cfg' key is added into
                 result dict.
         """
-
+        #TODO to add the normalization for other data streams
         results['img'] = mmcv.imnormalize(results['img'], self.mean, self.std,
                                           self.to_rgb)
         results['img_norm_cfg'] = dict(
@@ -788,6 +828,13 @@ class RandomCrop(object):
         for key in results.get('seg_fields', []):
             results[key] = self.crop(results[key], crop_bbox)
 
+        # Apply transformation for additional data streams
+        added_types = results.get('added_types', {})
+        if added_types!={}:
+            for key in added_types.keys():
+                if added_types[key]["apply_transforms"]:
+                    results[key] = self.crop(results[key], crop_bbox)
+
         return results
 
     def __repr__(self):
@@ -845,6 +892,13 @@ class CenterCrop(object):
         # crop semantic seg
         for key in results.get('seg_fields', []):
             results[key] = self.crop(results[key], crop_bbox)
+
+        # Apply transformation for additional data streams
+        added_types = results.get('added_types', {})
+        if added_types!={}:
+            for key in added_types.keys():
+                if added_types[key]["apply_transforms"]:
+                    results[key] = self.crop(results[key], crop_bbox)
 
         return results
 
@@ -922,6 +976,21 @@ class RandomRotate(object):
                     center=self.center,
                     auto_bound=self.auto_bound,
                     interpolation='nearest')
+
+            # Apply transformation for additional data streams
+            added_types = results.get('added_types', {})
+            if added_types!={}:
+                for key in added_types.keys():
+                    if added_types[key]["apply_transforms"]:
+                        results[key] = mmcv.imrotate(
+                            results[key],
+                            angle=degree,
+                            border_value=self.seg_pad_val,
+                            center=self.center,
+                            auto_bound=self.auto_bound,
+                            interpolation='nearest')
+
+                    
         return results
 
     def __repr__(self):
@@ -1203,6 +1272,28 @@ class PhotoMetricDistortion(object):
             img = self.contrast(img)
 
         results['img'] = img
+
+        # Apply transformation for additional data streams
+        added_types = results.get('added_types', {})
+        if added_types!={}:
+            for key in added_types.keys():
+                if added_types[key]["apply_color_transforms"]:
+                    temp = results[key]
+                    temp = self.brightness(temp)
+                    if mode == 1:
+                        temp = self.contrast(temp)
+
+                    # random saturation
+                    temp = self.saturation(temp)
+
+                    # random hue
+                    temp = self.hue(temp)
+
+                    # random contrast
+                    if mode == 0:
+                        temp = self.contrast(temp)
+                    results[key] = temp
+
         return results
 
     def __repr__(self):

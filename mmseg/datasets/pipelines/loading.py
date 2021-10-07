@@ -7,6 +7,106 @@ from ..builder import PIPELINES
 
 
 @PIPELINES.register_module()
+class LoadDepthFromFile(object):
+    """Load an image from file.
+
+    Required keys are "depth_prefix" and "depth_info". Added or updated 
+    keys are "filename", "img", "img_shape", "ori_shape"
+    (same as `img_shape`), "pad_shape" (same as `img_shape`),
+    "scale_factor" (1.0) and "img_norm_cfg" (means=0 and stds=1).
+
+    Args:
+        to_float32 (bool): Whether to convert the loaded image to a float32
+            numpy array. If set to False, the loaded image is an uint8 array.
+            Defaults to False.
+        depth_type (str): The flag argument for defining the type of depth image.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmcv.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
+        imdecode_backend (str): Backend for :func:`mmcv.imdecode`. Default:
+            'cv2'
+    """
+
+    def __init__(self,
+                 to_float32=False,
+                 depth_type='repeat',
+                 depth_channels='grayscale',
+                 apply_transforms = True,
+                 file_client_args=dict(backend='disk'),
+                 imdecode_backend='cv2'):
+        self.to_float32 = to_float32
+        self.depth_type = depth_type                # define The type of depth image will be used ['repeat', 'HHA', 'CNN'] 
+        self.depth_channels = depth_channels        # define if the depth is one or three channels 
+        self.file_client_args = file_client_args.copy()
+        self.file_client = None
+        self.apply_transforms = apply_transforms
+        self.imdecode_backend = imdecode_backend
+
+    def __call__(self, results):
+        """Call functions to load image and get image meta information.
+
+        Args:
+            results (dict): Result dict from :obj:`mmseg.CustomDataset`.
+
+        Returns:
+            dict: The dict contains loaded image and meta information.
+        """
+
+        # Creating the dictionary of used data types
+        if not ("added_types" in results.keys() and isinstance(results["added_types"], dict)):
+             results["added_types"] = {}
+        
+        results["added_types"]["depth"] = {"apply_transforms":True, "apply_color_transforms":False, "pad_val":0}
+        if self.file_client is None:
+            self.file_client = mmcv.FileClient(**self.file_client_args)
+
+        if results.get('depth_prefix') is not None:
+            filename = osp.join(results['depth_prefix'],
+                                results['depth_info'])
+        else:
+            filename = results['depth_info']
+        if(".npy" in filename):
+            img = np.load(filename)
+        else:
+            img_bytes = self.file_client.get(filename)
+            img = mmcv.imfrombytes(
+                img_bytes, flag=self.depth_channels, backend=self.imdecode_backend)
+        if self.to_float32:
+            img = img.astype(np.float32)
+            
+        if len(img.shape) < 3:
+            img = np.expand_dims(img, -1)
+
+        if self.depth_type == "repeat":
+                img = np.concatenate((img, img, img), axis=2)
+
+
+        results['depth_filename'] = filename
+        results['depth_ori_filename'] = results['depth_info']
+        results['depth'] = img
+        results['depth_shape'] = img.shape
+        results['depth_ori_shape'] = img.shape
+        # Set initial values for default meta_keys
+        results['depth_pad_shape'] = img.shape
+        # results['scale_factor'] = 1.0
+        num_channels = 1 if len(img.shape) < 3 else img.shape[2]
+        results['depth_norm_cfg'] = dict(
+            mean=np.zeros(num_channels, dtype=np.float32),
+            std=np.ones(num_channels, dtype=np.float32),
+            to_rgb=False)
+
+
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(to_float32={self.to_float32},'
+        repr_str += f"depth_channels='{self.depth_channels}',"
+        repr_str += f"imdecode_backend='{self.imdecode_backend}')"
+        return repr_str
+
+
+@PIPELINES.register_module()
 class LoadImageFromFile(object):
     """Load an image from file.
 
@@ -144,6 +244,7 @@ class LoadAnnotations(object):
             gt_semantic_seg[gt_semantic_seg == 254] = 255
         results['gt_semantic_seg'] = gt_semantic_seg
         results['seg_fields'].append('gt_semantic_seg')
+
         return results
 
     def __repr__(self):
