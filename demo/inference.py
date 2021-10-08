@@ -47,7 +47,7 @@ def main():
         palette = [[102, 255, 102], [51, 221, 255], [245, 147, 49], [184, 61, 245], [250, 50, 83], [0, 0, 0], [255, 255, 255]]
     else:
         raise AssertionError('Wrong type of classes')
-    print(f"Type of classes was set to {args.num_classes}")
+    print(f"Type of classes was set to {args.classes_type}")
     print(f"Flag for saving tensors was set to {args.save_tensor}")
     palette = np.array(palette)
 
