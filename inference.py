@@ -2,8 +2,8 @@ from argparse import ArgumentParser
 import os
 
 import torch
-from mmseg.apis import inference_segmentor, init_segmentor, show_result_pyplot
-from mmseg.core.evaluation import get_palette
+from segformer.apis import inference_segmentor, init_segmentor, show_result_pyplot
+from segformer.core.evaluation import get_palette
 import mmcv
 from PIL import Image
 import numpy as np
