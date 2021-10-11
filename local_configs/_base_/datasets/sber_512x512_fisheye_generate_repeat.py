@@ -1,8 +1,12 @@
 # dataset settings
 dataset_type = 'SberbankDatasetFisheye'
 data_root = 'data/SberMerged/'
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+train_img_norm_cfg = dict(
+    mean=[111.777, 112.291, 107.274], std=[13.032, 11.905, 13.698], to_rgb=True)
+test_img_norm_cfg = dict(
+    mean=[112.333, 112.522, 106.732], std=[15.102, 12.400, 14.6139], to_rgb=True)
+val_img_norm_cfg = dict(
+    mean=[112.102, 112.109, 104.595], std=[14.388, 12.927, 17.728], to_rgb=True)
 crop_size = (512, 512)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -14,7 +18,7 @@ train_pipeline = [
          part_x_range=(0.8, 1.4), part_y_range=(0.8, 1.4), palette=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PhotoMetricDistortion'),
-    dict(type='Normalize', **img_norm_cfg),
+    dict(type='Normalize', **train_img_norm_cfg),
     dict(type='Resize', img_scale=(512, 512), keep_ratio=False),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_semantic_seg']),
@@ -32,7 +36,7 @@ test_pipeline = [
             
             dict(type='Resize', keep_ratio=True),
             dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
+            dict(type='Normalize', **val_img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
         ])
