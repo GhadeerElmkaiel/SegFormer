@@ -146,7 +146,7 @@ def multi_gpu_test(model,
             results.append(result)
 
         if rank == 0:
-            batch_size = data['img'][0].size(0)
+            batch_size = data['img'][0].data[0].size(0)
             for _ in range(batch_size * world_size):
                 prog_bar.update()
 

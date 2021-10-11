@@ -89,12 +89,31 @@ class ImageToTensor(object):
             dict: The result dict contains the image converted
                 to :obj:`torch.Tensor` and transposed to (C, H, W) order.
         """
-
-        for key in self.keys:
-            img = results[key]
+        channels={}
+        if 'img' in results.keys():
+            img = results['img']
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
-            results[key] = to_tensor(img.transpose(2, 0, 1))
+            img_channels = [i for i in range(img.shape[-1])]
+            channels['img'] = img_channels
+            if 'depth' in results.keys():
+                depth = results['depth']
+                if len(depth.shape) < 3:
+                    depth = np.expand_dims(depth, -1)
+
+                depth_channels = [i+img.shape[-1] for i in range(depth.shape[-1])]     
+                channels['depth'] = depth_channels           
+                img = np.concatenate((img, depth), axis=2)
+
+            img = np.ascontiguousarray(img.transpose(2, 0, 1))
+            results['img'] = DC(to_tensor(img), stack=True)
+            results['channels'] = channels
+
+        # for key in self.keys:
+        #     img = results[key]
+        #     if len(img.shape) < 3:
+        #         img = np.expand_dims(img, -1)
+        #     results[key] = to_tensor(img.transpose(2, 0, 1))
         return results
 
     def __repr__(self):
@@ -214,6 +233,65 @@ class DefaultFormatBundle(object):
     def __repr__(self):
         return self.__class__.__name__
 
+@PIPELINES.register_module()
+class WithDepthFormatBundle(object):
+    """Default formatting bundle.
+    It simplifies the pipeline of formatting common fields, including "img"
+    and "gt_semantic_seg". These fields are formatted as follows.
+    - img: (1)transpose, (2)to tensor, (3)to DataContainer (stack=True)
+    - gt_semantic_seg: (1)unsqueeze dim-0 (2)to tensor,
+                       (3)to DataContainer (stack=True)
+    """
+
+    def __call__(self, results):
+        """Call function to transform and format common fields in results.
+        Args:
+            results (dict): Result dict contains the data to convert.
+        Returns:
+            dict: The result dict contains the data that is formatted with
+                default bundle.
+        """
+        channels={}
+        if 'img' in results:
+            img = results['img']
+            if len(img.shape) < 3:
+                img = np.expand_dims(img, -1)
+            img_channels = [i for i in range(img.shape[-1])]
+            channels['img'] = img_channels
+            if 'depth' in results:
+                depth = results['depth']
+                if len(depth.shape) < 3:
+                    depth = np.expand_dims(depth, -1)
+
+                depth_channels = [i+img.shape[-1] for i in range(depth.shape[-1])]     
+                channels['depth'] = depth_channels           
+                img = np.concatenate((img, depth), axis=2)
+                # depth = np.ascontiguousarray(depth)
+                # results['depth'] = DC(to_tensor(depth), stack=True)
+
+            img = np.ascontiguousarray(img.transpose(2, 0, 1))
+
+            results['img'] = DC(to_tensor(img), stack=True)
+            results['channels'] = channels
+
+        # if 'depth' in results:
+        #     depth = results['depth']
+        #     if len(depth.shape) < 3:
+        #         depth = np.expand_dims(depth, -1)
+        #     depth = np.ascontiguousarray(depth)
+        #     results['depth'] = DC(to_tensor(depth), stack=True)
+
+        if 'gt_semantic_seg' in results:
+            # convert to long
+            results['gt_semantic_seg'] = DC(
+                to_tensor(results['gt_semantic_seg'][None,
+                                                     ...].astype(np.int64)),
+                stack=True)
+        return results
+
+    def __repr__(self):
+        return self.__class__.__name__
+
 
 @PIPELINES.register_module()
 class Collect(object):
@@ -257,9 +335,11 @@ class Collect(object):
                  keys,
                  meta_keys=('filename', 'ori_filename', 'ori_shape',
                             'img_shape', 'pad_shape', 'scale_factor', 'flip',
-                            'flip_direction', 'img_norm_cfg')):
+                            'flip_direction', 'img_norm_cfg'),
+                            additional_meta_keys=['channels']):
         self.keys = keys
         self.meta_keys = meta_keys
+        self.additional_meta_keys = additional_meta_keys
 
     def __call__(self, results):
         """Call function to collect keys in results. The keys in ``meta_keys``
@@ -278,6 +358,11 @@ class Collect(object):
         img_meta = {}
         for key in self.meta_keys:
             img_meta[key] = results[key]
+        for key in self.additional_meta_keys:
+            if key in results.keys():
+                img_meta[key] = results[key]
+            else:
+                img_meta[key] = None
         data['img_metas'] = DC(img_meta, cpu_only=True)
         for key in self.keys:
             data[key] = results[key]
@@ -285,4 +370,4 @@ class Collect(object):
 
     def __repr__(self):
         return self.__class__.__name__ + \
-               f'(keys={self.keys}, meta_keys={self.meta_keys})'
+               f'(keys={self.keys}, meta_keys={self.meta_keys}, additional_meta_keys={self.additional_meta_keys})'

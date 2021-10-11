@@ -1,6 +1,6 @@
 _base_ = [
     '../../_base_/models/segformer.py',
-    '../../_base_/datasets/sber_512x512_repeat.py',
+    '../../_base_/datasets/sber_512x512_rgbd.py',
     '../../_base_/default_runtime.py',
     '../../_base_/schedules/schedule_160k_adamw.py'
 ]
@@ -10,7 +10,7 @@ norm_cfg = dict(type='SyncBN', requires_grad=True)
 find_unused_parameters = True
 model = dict(
     type='EncoderDecoder',
-    pretrained='pretrained/mit_b2.pth',
+    pretrained='SegFormer/pretrained/mit_b2.pth',
     backbone=dict(
         type='mit_b2',
         style='pytorch'),
@@ -32,7 +32,7 @@ model = dict(
     test_cfg=dict(mode='slide', crop_size=(1024,1024), stride=(768,768)))
 
 # data
-data = dict(samples_per_gpu=1)
+data = dict(samples_per_gpu=1, workers_per_gpu=1)
 evaluation = dict(interval=4000, metric='mIoU')
 
 # optimizer
