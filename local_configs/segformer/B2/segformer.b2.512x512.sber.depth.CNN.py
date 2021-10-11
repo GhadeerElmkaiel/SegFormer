@@ -14,7 +14,7 @@ model = dict(
     backbone=dict(
         type='mit_depth_b2',
         depth_embed_type='CNN',
-        weights_only_MVF=False),
+        weights_only_MVF=True),
     decode_head=dict(
         type='SegFormerheadWithDepthEdges',
         in_channels=[64, 128, 320, 512, 64, 128, 320, 512],
@@ -34,7 +34,7 @@ model = dict(
 # data
 data = dict(samples_per_gpu=1, workers_per_gpu=2)
 # checkpoint_config = dict(by_epoch=False, interval=16000)
-evaluation = dict(interval=200000, metric='mIoU')
+evaluation = dict(interval=4000, metric='mIoU')
 
 # optimizer
 optimizer = dict(_delete_=True, type='AdamW', lr=0.00006, betas=(0.9, 0.999), weight_decay=0.01,

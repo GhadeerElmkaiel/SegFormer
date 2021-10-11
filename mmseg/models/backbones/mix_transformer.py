@@ -275,9 +275,11 @@ class MixVisionTransformer(nn.Module):
                 m.bias.data.zero_()
 
     def init_weights(self, pretrained=None):
+        print("In init_weights")
         if isinstance(pretrained, str):
             logger = get_root_logger()
             load_checkpoint(self, pretrained, map_location='cpu', strict=False, logger=logger)
+        print("finished init_weights")
 
     def reset_drop_path(self, drop_path_rate):
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(self.depths))]
@@ -362,7 +364,7 @@ class MixVisionDepthTransformer(nn.Module):
                  attn_drop_rate=0., drop_path_rate=0., norm_layer=nn.LayerNorm,
                  depths=[3, 4, 6, 3], sr_ratios=[8, 4, 2, 1], depth_embed_type="repeat", weights_only_MVF=False, style='pytorch'):
         super().__init__()
-        self.weights_only_MVF = weights_only_MVF
+        self.weights_only_MVF = weights_only_MVF            # initializing only the partial MixedVisionTransformer
         self.rgb_branch = MixVisionTransformer(img_size, patch_size, in_chans, num_classes, embed_dims,
                  num_heads, mlp_ratios, qkv_bias, qk_scale, drop_rate,
                  attn_drop_rate, drop_path_rate, norm_layer,
@@ -407,12 +409,13 @@ class MixVisionDepthTransformer(nn.Module):
         """
         if not self.weights_only_MVF: 
             if isinstance(pretrained, str):
+                print("weights_only_MVF: ",self.weights_only_MVF)
                 logger = get_root_logger()
                 load_checkpoint(self, pretrained, map_location='cpu', strict=False, logger=logger)
         else:
+            print("weights_only_MVF: ",self.weights_only_MVF)
             if isinstance(pretrained, str):
                 self.init_transformers_same_weights(pretrained)
-
     
     # This function is for initialize the weights of the backbones in the same way
     def init_transformers_same_weights(self, weights):
@@ -421,8 +424,14 @@ class MixVisionDepthTransformer(nn.Module):
         """
         #TODO Check if change is needed to load weights only for the backbone 
         #TODO without The CNN in the case of "CNN"  
+        print("Initializing RGB branch")
         self.rgb_branch.init_weights(weights)
-        self.depth_branch["Depth_MixVisionTransformer"].init_weights(weights)
+        print("Initializing Depth branch")
+        # self.depth_branch["Depth_MixVisionTransformer"].init_weights(weights)
+        self.depth_branch[1].init_weights(weights)
+        print("Initializing done!")
+        
+        # raise ValueError
 
     # def __call__(self, x, x_metas):
     #     raise NotImplementedError
