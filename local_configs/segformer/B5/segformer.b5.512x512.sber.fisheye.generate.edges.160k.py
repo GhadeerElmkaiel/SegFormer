@@ -31,7 +31,7 @@ model = dict(
     test_cfg=dict(mode='whole'))
 
 # data
-data = dict(samples_per_gpu=3, workers_per_gpu=3)
+data = dict(samples_per_gpu=5, workers_per_gpu=5)
 checkpoint_config = dict(by_epoch=False, interval=16000)
 evaluation = dict(interval=16000, metric='mIoU')
 
@@ -48,12 +48,17 @@ lr_config = dict(_delete_=True, policy='poly',
                  warmup_ratio=1e-6,
                  power=1.0, min_lr=0.0, by_epoch=False)
 
+train_img_norm_cfg = dict(
+    mean=[111.777, 112.291, 107.274], std=[13.032, 11.905, 13.698], to_rgb=True)
+
 log_config = dict(
-    interval=1,
+    interval=10,
     hooks=[
         dict(type='TextLoggerHook', by_epoch=False),
         dict(type='TensorboardLoggerImagesHook', num_classes=7, img_interval=1000,
-                    log_dir='/home/jovyan/segformer/work_dirs/tf_board')
+                    norm_cfg=train_img_norm_cfg,
+                    log_dir='/home/jovyan/tf_board/b5_512_fisheye_generate_batch5'),
+        dict(type='MlflowLoggerHook', exp_name='SegformerB5FisheyeGenerate', by_epoch=False)
     ])
 
 

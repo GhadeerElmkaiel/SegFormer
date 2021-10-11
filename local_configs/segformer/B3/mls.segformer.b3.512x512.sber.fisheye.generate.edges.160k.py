@@ -1,6 +1,6 @@
 _base_ = [
     '/home/jovyan/segformer/local_configs/_base_/models/segformer.py',
-    '/home/jovyan/segformer/local_configs/_base_/datasets/sber_512x512_fisheye_generate_repeat.py',
+    '/home/jovyan/segformer/local_configs/_base_/datasets/sber_512x512_fisheye_generate_compare_repeat.py',
     '/home/jovyan/segformer/local_configs/_base_/default_runtime.py',
     '/home/jovyan/segformer/local_configs/_base_/schedules/schedule_160k_adamw.py'
 ]
@@ -47,13 +47,16 @@ lr_config = dict(_delete_=True, policy='poly',
                  warmup_iters=1500,
                  warmup_ratio=1e-6,
                  power=1.0, min_lr=0.0, by_epoch=False)
+train_img_norm_cfg = dict(
+    mean=[111.777, 112.291, 107.274], std=[13.032, 11.905, 13.698], to_rgb=True)
 
 log_config = dict(
     interval=10,
     hooks=[
         dict(type='TextLoggerHook', by_epoch=False),
-        dict(type='TensorboardLoggerHook',
-                    log_dir='/home/jovyan/segformer/work_dirs/tf_board_b3_fisheye_generate'),
+        dict(type='TensorboardLoggerImagesHook', num_classes=7, img_interval=1000,
+                    norm_cfg=train_img_norm_cfg,
+                    log_dir='/home/jovyan/tf_board/b3_512_fisheye_generate_batch12_compare'),
         dict(type='MlflowLoggerHook', exp_name='SegformerB3FisheyeGenerate', by_epoch=False)
     ])
 

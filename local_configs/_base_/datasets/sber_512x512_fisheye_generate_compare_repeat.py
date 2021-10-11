@@ -11,8 +11,8 @@ crop_size = (512, 512)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations'),
-    dict(type='DistortPinholeToFisheye', transform_probability = 1.,  input_shape = (720,1280), output_shape = (1200,1920), num_classes=6,
-                                        focal_distances = [25, 50, 75, 100, 125, 150], maps_probability = None, palette=True),
+    dict(type='DistortPinholeToFisheye', transform_probability = 1.,  input_shape = (720,1280), output_shape = (1440,1440), num_classes=6,
+                                        focal_distances = [100], maps_probability = None, palette=True),
     dict(type='RandomFisheyeShift', prob=0.5, max_dx=200, max_dy=200, num_classes=6, palette=True),
     dict(type='RandomFisheyeCrop', prob=0.5, num_classes=6,
          part_x_range=(0.8, 1.2), part_y_range=(0.8, 1.2), palette=True),
@@ -25,7 +25,7 @@ train_pipeline = [
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='DistortPinholeToFisheye', transform_probability = 1.,  input_shape = (720,1280), output_shape = (1200,1920), num_classes=6,
+    dict(type='DistortPinholeToFisheye', transform_probability = 1.,  input_shape = (720,1280), output_shape = (1440,1440), num_classes=6,
         focal_distances = [100], maps_probability = None, palette=True),
     dict(
         type='MultiScaleFlipAug',

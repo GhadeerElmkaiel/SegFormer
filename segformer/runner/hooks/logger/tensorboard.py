@@ -101,7 +101,7 @@ class TensorboardLoggerImagesHook(LoggerHook):
         # tags = self.get_loggable_tags(runner, allow_text=True)
         if self.get_iter(runner) % self.img_interval == 0:
             img = self.logImages(runner.outputs['log_images'])
-            self.writer.add_image('Original | Segmentation', img)
+            self.writer.add_image('Original | Segmentation', img, self.get_iter(runner))
         tags = self.get_loggable_tags(runner, allow_text=True)
         for tag, val in tags.items():
             if isinstance(val, str):
