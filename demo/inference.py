@@ -63,6 +63,7 @@ def main():
         # Getting the results from the model
         result, output = inference_segmentor_with_depth(model, path_to_img, path_to_depth)
         # result, output = inference_segmentor(model, path_to_img)
+
         seg = result[0]
 
         color_seg = np.zeros((seg.shape[0], seg.shape[1], 3), dtype=np.uint8)

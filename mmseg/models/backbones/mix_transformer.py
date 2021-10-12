@@ -275,7 +275,6 @@ class MixVisionTransformer(nn.Module):
                 m.bias.data.zero_()
 
     def init_weights(self, pretrained=None):
-        print("In init_weights")
         if isinstance(pretrained, str):
             logger = get_root_logger()
             load_checkpoint(self, pretrained, map_location='cpu', strict=False, logger=logger)
