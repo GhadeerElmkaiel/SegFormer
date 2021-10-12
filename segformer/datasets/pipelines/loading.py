@@ -2,6 +2,7 @@ import os.path as osp
 
 import mmcv
 import numpy as np
+import cv2
 
 from ..builder import PIPELINES
 
@@ -64,9 +65,11 @@ class LoadDepthFromFile(object):
         if(".npy" in filename):
             img = np.load(filename)
         else:
-            img_bytes = self.file_client.get(filename)
-            img = mmcv.imfrombytes(
-                img_bytes, flag=self.depth_channels, backend=self.imdecode_backend)
+            #TODO
+            # img_bytes = self.file_client.get(filename)
+            # img = mmcv.imfrombytes(
+            #     img_bytes, flag=self.depth_channels, backend=self.imdecode_backend)
+            img = cv2.imread(filename, -1)
         if self.to_float32:
             img = img.astype(np.float32)
 

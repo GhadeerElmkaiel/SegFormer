@@ -671,6 +671,44 @@ class Normalize(object):
 
 
 @PIPELINES.register_module()
+class NormalizeData(object):
+    """Normalize specific data in the results dictionary.
+    Added key is "{data_name}_norm_cfg".
+    Args:
+        mean (sequence): Mean values of the data channels.
+        std (sequence): Std values of the data channels.
+        data_name (string): data_name the key to the data values in the results dictionary
+    """
+
+    def __init__(self, mean, std, data_name):
+        self.mean = np.array(mean, dtype=np.float32)
+        self.std = np.array(std, dtype=np.float32)
+        self.data_name = data_name
+
+    def __call__(self, results):
+        """Call function to normalize images.
+        Args:
+            results (dict): Result dict from loading pipeline.
+        Returns:
+            dict: Normalized results, '{data_name}_norm_cfg' key is added into
+                result dict.
+        """
+        results[self.data_name] = mmcv.imnormalize(results[self.data_name], self.mean, self.std,
+                                          False)
+        new_key = self.data_name+'_norm_cfg'
+        results[new_key] = dict(
+            mean=self.mean, std=self.std)
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(mean={self.mean}, std={self.std}, to_rgb=' \
+                    f'{self.to_rgb})'
+        return repr_str
+
+
+
+@PIPELINES.register_module()
 class Rerange(object):
     """Rerange the image pixel value.
 
