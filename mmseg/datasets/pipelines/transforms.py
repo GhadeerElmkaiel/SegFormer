@@ -697,6 +697,7 @@ class NormalizeData(object):
             dict: Normalized results, '{data_name}_norm_cfg' key is added into
                 result dict.
         """
+
         results[self.data_name] = mmcv.imnormalize(results[self.data_name], self.mean, self.std,
                                           False)
         new_key = self.data_name+'_norm_cfg'
