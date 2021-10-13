@@ -13,13 +13,13 @@ norm_cfg = dict(type='SyncBN', requires_grad=True)
 find_unused_parameters = True
 model = dict(
     type='GeneralEncoderDecoder',
-    pretrained='SegFormer/pretrained/mit_b2.pth',
+    pretrained='SegFormer/pretrained/mit_b5.pth',
     backbone=dict(
-        type='mit_depth_b2',
+        type='mit_depth_b5',
         depth_embed_type='repeat',
         weights_only_MVF=True),
     decode_head=dict(
-        type='SegFormerheadWithDepthEdges',
+        type='SegFormerheadWithEdges',
         in_channels=[64, 128, 320, 512, 64, 128, 320, 512],
         in_index=[0, 1, 2, 3, 4, 5, 6, 7],
         feature_strides=[4, 8, 16, 32, 4, 8, 16, 32],
@@ -34,9 +34,9 @@ model = dict(
     train_cfg=dict(),
     test_cfg=dict(mode='slide', crop_size=(512,512), stride=(384,384)))
 
+
 # data
-data = dict(samples_per_gpu=1, workers_per_gpu=2)
-# checkpoint_config = dict(by_epoch=False, interval=16000)
+data = dict(samples_per_gpu=1)
 evaluation = dict(interval=4000, metric='mIoU')
 
 # optimizer
@@ -62,3 +62,5 @@ log_config = dict(
         dict(type='TensorboardLoggerHook', by_epoch=False),
         # dict(type='TensorboardLoggerImagesHook', norm_cfg=img_norm_cfg, img_interval=10)
     ])
+
+
