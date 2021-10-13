@@ -10,9 +10,9 @@ norm_cfg = dict(type='SyncBN', requires_grad=True)
 find_unused_parameters = True
 model = dict(
     type='GeneralEncoderDecoder',
-    pretrained='pretrained/mit_b2.pth',
+    pretrained='pretrained/mit_b5.pth',
     backbone=dict(
-        type='mit_depth_b2',
+        type='mit_depth_b5',
         depth_embed_type='repeat',
         weights_only_MVF=True),
     decode_head=dict(
@@ -31,9 +31,10 @@ model = dict(
     train_cfg=dict(),
     test_cfg=dict(mode='slide', crop_size=(512,512), stride=(384,384)))
 
+
 # data
-data = dict(samples_per_gpu=1, workers_per_gpu=2)
-# checkpoint_config = dict(by_epoch=False, interval=16000)
+data = dict(samples_per_gpu=1)
+checkpoint_config = dict(by_epoch=False, interval=16000)
 evaluation = dict(interval=4000, metric='mIoU')
 
 # optimizer
@@ -49,7 +50,6 @@ lr_config = dict(_delete_=True, policy='poly',
                  warmup_ratio=1e-6,
                  power=1.0, min_lr=0.0, by_epoch=False)
 
-
 init_kwargs = dict(config=dict(data=data, model=model, optimizer=optimizer))
 
 log_config = dict(
@@ -59,3 +59,5 @@ log_config = dict(
         dict(type='TensorboardLoggerHook', by_epoch=False),
         dict(type='WandbLoggerHook', by_epoch=False, init_kwargs=init_kwargs)
     ])
+
+
