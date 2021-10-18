@@ -698,11 +698,77 @@ class NormalizeData(object):
                 result dict.
         """
 
+        # print("_____________________")
+        # print("Before Norm:")
+        # print("Max val: ", np.max(results[self.data_name]))
+        # print("Min val: ", np.min(results[self.data_name]))
+        # print("Mean val: ", np.mean(results[self.data_name]))
+        # print("Median val: ", np.median(results[self.data_name]))
         results[self.data_name] = mmcv.imnormalize(results[self.data_name], self.mean, self.std,
                                           False)
+        # print("After Norm:")
+        # print("Max val: ", np.max(results[self.data_name]))
+        # print("Min val: ", np.min(results[self.data_name]))
+        # print("Mean val: ", np.mean(results[self.data_name]))
+        # print("Median val: ", np.median(results[self.data_name]))
         new_key = self.data_name+'_norm_cfg'
         results[new_key] = dict(
             mean=self.mean, std=self.std)
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(mean={self.mean}, std={self.std}, to_rgb=' \
+                    f'{self.to_rgb})'
+        return repr_str
+
+
+
+@PIPELINES.register_module()
+class UnNormalizeData(object):
+    """UnNormalize specific data in the results dictionary.
+
+    Args:
+        mean (sequence): Mean values of the data channels.
+        std (sequence): Std values of the data channels.
+        data_name (string): data_name the key to the data values in the results dictionary
+    """
+
+    def __init__(self, mean, std, data_name):
+        self.mean = np.array(mean, dtype=np.float32)
+        self.std = np.array(std, dtype=np.float32)
+        self.data_name = data_name
+        self.new_data_name = "UnNorm_"+self.data_name
+        self.inv_mean = -(self.mean/self.std)
+        self.inv_std = 1/self.std
+
+    def __call__(self, results):
+        """Call function to normalize images.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Normalized results, '{data_name}_norm_cfg' key is added into
+                result dict.
+        """
+
+        print("_____________________")
+        print("Before UnNorm:")
+        print("Max val: ", np.max(results[self.data_name]))
+        print("Min val: ", np.min(results[self.data_name]))
+        print("Mean val: ", np.mean(results[self.data_name]))
+        print("Median val: ", np.median(results[self.data_name]))
+        results[self.new_data_name] = mmcv.imnormalize(results[self.data_name], self.inv_mean, self.inv_std,
+                                          False)
+        print("After UnNorm:")
+        print("Max val: ", np.max(results[self.new_data_name]))
+        print("Min val: ", np.min(results[self.new_data_name]))
+        print("Mean val: ", np.mean(results[self.new_data_name]))
+        print("Median val: ", np.median(results[self.new_data_name]))
+        # new_key = self.data_name+'_norm_cfg'
+        # results[new_key] = dict(
+        #     mean=self.mean, std=self.std)
         return results
 
     def __repr__(self):

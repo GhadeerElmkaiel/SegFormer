@@ -69,10 +69,6 @@ class LoadDepthFromFile(object):
         if(".npy" in filename):
             img = np.load(filename)
         else:
-            #TODO
-            # img_bytes = self.file_client.get(filename)
-            # img = mmcv.imfrombytes(
-            #     img_bytes, flag=self.depth_channels, backend=self.imdecode_backend)
             img = cv2.imread(filename, -1)
         if self.to_float32:
             img = img.astype(np.float32)

@@ -17,6 +17,8 @@ from mmseg.utils import get_root_logger
 from mmcv.runner import load_checkpoint
 import math
 
+from PIL import Image
+import numpy as np
 
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
@@ -401,6 +403,8 @@ class MixVisionDepthTransformer(nn.Module):
             ])
             )
 
+        self._itter_=0
+
     # This function is for laoding the weights after training, that is why it is the same as in other models
     def init_weights(self, pretrained=None):
         """
@@ -438,7 +442,6 @@ class MixVisionDepthTransformer(nn.Module):
 
     # The forward should contain 2 images, RGB, Depth
     def forward(self, x, x_metas):
-        #TODO Finish the forward function deppending on the form of the data it gets 
         # rgb = x["rgb"]
         # depth = x["depth"]
         # rgb_res = self.rgb_branch.forward(rgb)
@@ -463,6 +466,230 @@ class MixVisionDepthTransformer(nn.Module):
         depth_tensor = splited_tensors[data_tensor_indices["depth"]]
         rgb_featurs = self.rgb_branch(rgb_tensor)
         depth_featurs = self.depth_branch(depth_tensor)
+        
+        # depth_vals = torch.clone(depth_tensor)
+        # print("depth_vals tensor size: ", depth_vals[0].size())
+        # depth_vals = depth_vals[0].cpu().detach().numpy()
+        # depth_vals = (depth_vals+5)*4
+        # cnn_depth = self.depth_branch[0](depth_tensor)
+        # print("test_depth tensor size: ", test_depth[0].size())
+        # copy_cnn_depth = torch.clone(cnn_depth[0])
+        # numpy_cnn_depth = copy_cnn_depth.cpu().detach().numpy()
+        # print("cnn_depth max: ", np.max(numpy_cnn_depth))
+        # print("cnn_depth min: ", np.min(numpy_cnn_depth))
+        # print("shape: ",numpy_cnn_depth.shape)
+        # numpy_cnn_depth = np.swapaxes(numpy_cnn_depth,0, 2)
+        # numpy_cnn_depth = np.swapaxes(numpy_cnn_depth,1, 0)
+        # print("shape: ",numpy_cnn_depth.shape)
+        # new_arr = 10*(numpy_cnn_depth+12)
+        # print("cnn_depth max: ", np.max(new_arr))
+        # print("cnn_depth min: ", np.min(new_arr))
+        # print("shape: ",new_arr.shape)
+        # cnn_depth_im_0 = Image.fromarray(new_arr[0].astype(np.uint8))
+        # cnn_depth_im_1 = Image.fromarray(new_arr[1].astype(np.uint8))
+        # cnn_depth_im_2 = Image.fromarray(new_arr[2].astype(np.uint8))
+        # depth_im = Image.fromarray(depth_vals[0].astype(np.uint8))
+
+        # cnn_depth_im_0 = cnn_depth_im_0.convert("L")
+        # cnn_depth_im_1 = cnn_depth_im_1.convert("L")
+        # cnn_depth_im_2 = cnn_depth_im_2.convert("L")
+        # depth_im = depth_im.convert("L")
+
+        # name_0 = "data/testing/cnn_depth_" + str(self._itter_) + "_0.png"
+        # name_1 = "data/testing/cnn_depth_" + str(self._itter_) + "_1.png"
+        # name_2 = "data/testing/cnn_depth_" + str(self._itter_) + "_2.png"
+        # name_im = "data/testing/cnn_depth_" + str(self._itter_) + "_im.png"
+        # cnn_depth_im_0.save(name_0)
+        # cnn_depth_im_1.save(name_1)
+        # cnn_depth_im_2.save(name_2)
+        # depth_im.save(name_im)
+        # self._itter_ = self._itter_+1
+
+
+        # print("rgb_featurs tensor size: ", rgb_featurs[1].size())
+        # print("depth_featurs tensor size: ", depth_featurs[1].size())
+        # copy_depth_featurs = torch.clone(depth_featurs[0])
+        # copy_rgb_featurs = torch.clone(rgb_featurs[0])
+        # numpy_depth_featurs = copy_depth_featurs.cpu().detach().numpy()
+        # numpy_rgb_featurs = copy_rgb_featurs.cpu().detach().numpy()
+        # print("rgb_featurs max: ", np.max(numpy_rgb_featurs))
+        # print("rgb_featurs min: ", np.min(numpy_rgb_featurs))
+        # print("depth_featurs max: ", np.max(numpy_depth_featurs))
+        # print("depth_featurs min: ", np.min(numpy_depth_featurs))
+        # depth_im = Image.fromarray(35*(numpy_depth_featurs[0][5]+3))
+        # rgb_im = Image.fromarray(35*(numpy_rgb_featurs[0][5]+3))
+        # depth_im = depth_im.convert("L")
+        # rgb_im = rgb_im.convert("L")
+        # d_name = "data/testing/depth_" + str(self._itter_) + ".png"
+        # rgb_name = "data/testing/rgb_" + str(self._itter_) + ".png"
+        # depth_im.save(d_name)
+        # rgb_im.save(rgb_name)
+        # self._itter_ = self._itter_+1
+
+        features_merged =rgb_featurs+ depth_featurs
+
+        return features_merged
+        # raise NotImplementedError
+
+        
+
+class MixVisionDepthConcatTransformer(nn.Module):
+    def __init__(self, img_size=224, patch_size=16, in_chans=3, num_classes=1000, embed_dims=[64, 128, 256, 512],
+                 num_heads=[1, 2, 4, 8], mlp_ratios=[4, 4, 4, 4], qkv_bias=False, qk_scale=None, drop_rate=0.,
+                 attn_drop_rate=0., drop_path_rate=0., norm_layer=nn.LayerNorm,
+                 depths=[3, 4, 6, 3], sr_ratios=[8, 4, 2, 1], depth_embed_type="repeat", weights_only_MVF=False, style='pytorch'):
+        super().__init__()
+        self.weights_only_MVF = weights_only_MVF            # initializing only the partial MixedVisionTransformer
+        self.rgb_branch = MixVisionTransformer(img_size, patch_size, in_chans, num_classes, embed_dims,
+                 num_heads, mlp_ratios, qkv_bias, qk_scale, drop_rate,
+                 attn_drop_rate, drop_path_rate, norm_layer,
+                 depths, sr_ratios)
+        
+        # depth_embed_type should be in ["CNN", "repeat", "HHA"] 
+        # Only in the case of the CNN the first part of the depth_branch will be Conv2d, Otherwise will be Identity
+        if depth_embed_type=="CNN":
+            self.depth_branch= nn.Sequential(OrderedDict([
+                ("Depth_embed", nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=1, padding=1, padding_mode="replicate")),
+                ("Depth_MixVisionTransformer", MixVisionTransformer(img_size, patch_size, in_chans, num_classes, embed_dims,
+                 num_heads, mlp_ratios, qkv_bias, qk_scale, drop_rate,
+                 attn_drop_rate, drop_path_rate, norm_layer,
+                 depths, sr_ratios))
+            ])
+            )
+            
+        elif depth_embed_type=="repeat":
+            self.depth_branch= nn.Sequential(OrderedDict([
+                ("Depth_embed", nn.Identity(in_channels=1, out_channels=3, kernel_size=3, stride=1, padding=1, padding_mode="same")),
+                ("Depth_MixVisionTransformer", MixVisionTransformer(img_size, patch_size, in_chans, num_classes, embed_dims,
+                 num_heads, mlp_ratios, qkv_bias, qk_scale, drop_rate,
+                 attn_drop_rate, drop_path_rate, norm_layer,
+                 depths, sr_ratios))
+            ])
+            )
+
+        elif depth_embed_type=="HHA":
+            self.depth_branch= nn.Sequential(OrderedDict([
+                ("Depth_embed", nn.Identity(in_channels=1, out_channels=3, kernel_size=3, stride=1, padding=1, padding_mode="same")),
+                ("Depth_MixVisionTransformer", MixVisionTransformer(img_size, patch_size, in_chans, num_classes, embed_dims,
+                 num_heads, mlp_ratios, qkv_bias, qk_scale, drop_rate,
+                 attn_drop_rate, drop_path_rate, norm_layer,
+                 depths, sr_ratios))
+            ])
+            )
+
+        self.conc_conv_1 = nn.Conv2d(embed_dims[0]*2,embed_dims[0])
+        self.conc_conv_2 = nn.Conv2d(embed_dims[1]*2,embed_dims[1])
+        self.conc_conv_3 = nn.Conv2d(embed_dims[2]*2,embed_dims[2])
+        # self.conc_conv_4 = nn.Conv2d(embed_dims[3]*2,embed_dims[3])
+
+        self._itter_=0
+
+    # This function is for laoding the weights after training, that is why it is the same as in other models
+    def init_weights(self, pretrained=None):
+        """
+        This function is for laoding the weights after training, that is why it is the same as in other models (such as MixVisionTransformer)
+        """
+        if not self.weights_only_MVF: 
+            if isinstance(pretrained, str):
+                print("weights_only_MVF: ",self.weights_only_MVF)
+                logger = get_root_logger()
+                load_checkpoint(self, pretrained, map_location='cpu', strict=False, logger=logger)
+        else:
+            print("weights_only_MVF: ",self.weights_only_MVF)
+            if isinstance(pretrained, str):
+                self.init_transformers_same_weights(pretrained)
+    
+    # This function is for initialize the weights of the backbones in the same way
+    def init_transformers_same_weights(self, weights):
+        """
+        This function is for initialize the weights of the backbones in the same way
+        """
+        print("Initializing RGB branch")
+        self.rgb_branch.init_weights(weights)
+        print("Initializing Depth branch")
+        # self.depth_branch["Depth_MixVisionTransformer"].init_weights(weights)
+        self.depth_branch[1].init_weights(weights)
+        print("Initializing done!")
+        
+        # raise ValueError
+
+    # def __call__(self, x, x_metas):
+    #     raise NotImplementedError
+
+
+    # The forward should contain 2 images, RGB, Depth
+    def forward(self, x, x_metas):
+
+
+        # return x
+        channels = x_metas[0].get('channels', {})
+        data_sizes = []
+        data_tensor_indices = {} 
+        idx = 0
+        for key in channels.keys():
+            data_sizes.append(len(channels[key]))
+            data_tensor_indices[key] = idx
+            idx+=1
+
+        splited_tensors = torch.split(x, data_sizes, dim=1)
+        rgb_tensor = splited_tensors[data_tensor_indices["img"]]
+        depth_tensor = splited_tensors[data_tensor_indices["depth"]]
+
+        depth_featurs = self.depth_branch(depth_tensor)
+
+        x = rgb_tensor
+        rgb_featurs = []
+        B = x.shape[0]
+
+        # stage 1
+        x, H, W = self.rgb_branch.patch_embed1(x)
+        for i, blk in enumerate(self.rgb_branch.block1):
+            x = blk(x, H, W)
+        x = self.rgb_branch.norm1(x)
+        x = x.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+        rgb_featurs.append(x)
+
+        # Concatinate first depth features with first RGB features
+        concat = torch.cat([x, depth_featurs[0]])
+        x = self.conc_conv_1(concat)
+
+        # stage 2
+        x, H, W = self.rgb_branch.patch_embed2(x)
+        for i, blk in enumerate(self.rgb_branch.block2):
+            x = blk(x, H, W)
+        x = self.rgb_branch.norm2(x)
+        x = x.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+        rgb_featurs.append(x)
+
+        # Concatinate first depth features with first RGB features
+        concat = torch.cat([x, depth_featurs[1]])
+        x = self.conc_conv_2(concat)
+
+
+        # stage 3
+        x, H, W = self.rgb_branch.patch_embed3(x)
+        for i, blk in enumerate(self.rgb_branch.block3):
+            x = blk(x, H, W)
+        x = self.rgb_branch.norm3(x)
+        x = x.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+        rgb_featurs.append(x)
+
+        # Concatinate first depth features with first RGB features
+        concat = torch.cat([x, depth_featurs[2]])
+        x = self.conc_conv_3(concat)
+
+
+        # stage 4
+        x, H, W = self.rgb_branch.patch_embed4(x)
+        for i, blk in enumerate(self.rgb_branch.block4):
+            x = blk(x, H, W)
+        x = self.rgb_branch.norm4(x)
+        x = x.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+        rgb_featurs.append(x)
+
+        # rgb_featurs = self.rgb_branch(rgb_tensor)
+        # depth_featurs = self.depth_branch(depth_tensor)
+
 
         features_merged =rgb_featurs+ depth_featurs
 
