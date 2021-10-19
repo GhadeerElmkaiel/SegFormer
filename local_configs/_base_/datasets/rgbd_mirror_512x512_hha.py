@@ -1,22 +1,20 @@
 # dataset settings
-#TODO add the SberbankDatasetWithDepth
-dataset_type = 'SberbankDatasetWithDepth'
-data_root = 'data/SberMerged_RGBD/'
-# data_root = 'data/SberMerged/'
+dataset_type = 'RGBDMirrorsHHA'
+data_root = 'data/RGBD-Mirror-HHA/'
+
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 depth_norm_cfg_train = dict(
-    mean=[3896.0], std=[4984.3], data_name="depth")
+    mean=[100.0, 100.0, 100.0], std=[100.0, 100.0, 100.0], data_name="depth")
 depth_norm_cfg_test = dict(
-    mean=[3978.6], std=[5048.8], data_name="depth")
+    mean=[100.0, 100.0, 100.0], std=[100.0, 100.0, 100.0], data_name="depth")
 # img_norm_cfg = dict(
 #     mean=[0., 0., 0.], std=[1., 1., 1.], to_rgb=True)
 crop_size = (512, 512)
-#TODO change the type of the image loader
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='LoadDepthFromFile', depth_type='CNN', depth_channels='grayscale'),
+    dict(type='LoadDepthFromFile', depth_type='HHA', depth_channels='grayscale'),
     dict(type='LoadAnnotations'),
     dict(type='Resize', img_scale=(2048, 512), ratio_range=(0.5, 2.0), apply_to_channels=['depth']),
     dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
@@ -30,7 +28,7 @@ train_pipeline = [
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='LoadDepthFromFile', depth_type='CNN', depth_channels='grayscale'),
+    dict(type='LoadDepthFromFile', depth_type='HHA', depth_channels='grayscale'),
     dict(
         type='MultiScaleFlipAug',
         img_scale=(2048, 512),
@@ -48,17 +46,16 @@ test_pipeline = [
 data = dict(
     samples_per_gpu=6,
     workers_per_gpu=6,
-    #TODO Add the path to depth in all three pipelines
     train=dict(
         type='RepeatDataset',
         times=500,
         dataset=dict(
             type=dataset_type,
             data_root=data_root,
-            img_dir='train/images',
-            ann_dir='train/Semantic_palette',
+            img_dir='train/image',
+            ann_dir='train/mask_single',
             # depth_dir='train/depth_png',
-            depth_dir='train/depth_png_v2',
+            depth_dir='train/hha',
             depth_suffix='.png',
             # depth_dir='train/normalized_depth',
             # depth_suffix='.npy',
@@ -66,10 +63,10 @@ data = dict(
     val=dict(
         type=dataset_type,
         data_root=data_root,
-        img_dir='validation/images',
-        ann_dir='validation/Semantic_palette',
-        # depth_dir='train/depth_png',
-        depth_dir='train/depth_png_v2',
+        img_dir='validation/image',
+        ann_dir='validation/mask_single',
+        # depth_dir='validation/depth_png',
+        depth_dir='validation/hha',
         depth_suffix='.png',
         # depth_dir='validation/normalized_depth',
         # depth_suffix='.npy',
@@ -77,10 +74,10 @@ data = dict(
     test=dict(
         type=dataset_type,
         data_root=data_root,
-        img_dir='test/images',
-        ann_dir='test/Semantic_palette',
-        # depth_dir='train/depth_png',
-        depth_dir='train/depth_png_v2',
+        img_dir='test/image',
+        ann_dir='test/mask_single',
+        # depth_dir='test/depth_png',
+        depth_dir='test/hha',
         depth_suffix='.png',
         # depth_dir='test/normalized_depth',
         # depth_suffix='.npy',
