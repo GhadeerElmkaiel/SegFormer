@@ -25,7 +25,7 @@ def main():
         '--palette',
         default='sber',
         help='Color palette used for segmentation map')
-    parser.add_argument('--classes-type', help='Type of classes', default='old', choices=['old','new'])
+    parser.add_argument('--classes-type', help='Type of classes', default='old', choices=['old','new', 'mirrors-rgbd'])
     parser.add_argument('--save-tensor', action='store_true', help='Save tensor data into file')
     args = parser.parse_args()
     if args.save_path == "data/NN_results/":
@@ -48,6 +48,9 @@ def main():
     elif args.classes_type == 'old':
         #           -- Mirror --      -- Glass --      -- FUO --      -- OOP --     -- Floor --   -- background  -- -- Void --
         palette = [[102, 255, 102], [51, 221, 255], [245, 147, 49], [184, 61, 245], [250, 50, 83], [0, 0, 0], [255, 255, 255]]
+    elif args.classes_type == 'mirrors-rgbd':
+        #          -- background-- -- Mirror -- 
+        palette = [[0, 0, 0], [255, 255, 255]]
     else:
         raise AssertionError('Wrong type of classes')
     print(f"Type of classes was set to {args.classes_type}")
