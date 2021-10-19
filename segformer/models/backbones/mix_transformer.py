@@ -551,7 +551,6 @@ class MixVisionDepthConcatTransformer(nn.Module):
     # The forward should contain 2 images, RGB, Depth
     def forward(self, x, x_metas):
 
-
         # return x
         channels = x_metas[0].get('channels', {})
         data_sizes = []
@@ -621,6 +620,9 @@ class MixVisionDepthConcatTransformer(nn.Module):
         # rgb_featurs = self.rgb_branch(rgb_tensor)
         # depth_featurs = self.depth_branch(depth_tensor)
 
+        features_merged =rgb_featurs+ depth_featurs
+
+        return features_merged
 
 
 class DWConv(nn.Module):
