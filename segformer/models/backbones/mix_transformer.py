@@ -507,11 +507,12 @@ class MixVisionDepthConcatTransformer(nn.Module):
             ])
             )
 
-        self.conc_conv_1 = nn.Conv2d(embed_dims[0]*2,embed_dims[0])
-        self.conc_conv_2 = nn.Conv2d(embed_dims[1]*2,embed_dims[1])
-        self.conc_conv_3 = nn.Conv2d(embed_dims[2]*2,embed_dims[2])
-        # self.conc_conv_4 = nn.Conv2d(embed_dims[3]*2,embed_dims[3])
 
+        self.conc_conv_1 = nn.Conv2d(embed_dims[0]*2,embed_dims[0], kernel_size=3, padding = (1))
+        self.conc_conv_2 = nn.Conv2d(embed_dims[1]*2,embed_dims[1], kernel_size=3, padding = (1))
+        self.conc_conv_3 = nn.Conv2d(embed_dims[2]*2,embed_dims[2], kernel_size=3, padding = (1))
+        # self.conc_conv_4 = nn.Conv2d(embed_dims[3]*2,embed_dims[3])
+        
         self._itter_=0
 
     # This function is for laoding the weights after training, that is why it is the same as in other models
@@ -580,7 +581,7 @@ class MixVisionDepthConcatTransformer(nn.Module):
         rgb_featurs.append(x)
 
         # Concatinate first depth features with first RGB features
-        concat = torch.cat([x, depth_featurs[0]])
+        concat = torch.cat([x, depth_featurs[0]], dim=1)
         x = self.conc_conv_1(concat)
 
         # stage 2
@@ -592,7 +593,7 @@ class MixVisionDepthConcatTransformer(nn.Module):
         rgb_featurs.append(x)
 
         # Concatinate first depth features with first RGB features
-        concat = torch.cat([x, depth_featurs[1]])
+        concat = torch.cat([x, depth_featurs[1]], dim=1)
         x = self.conc_conv_2(concat)
 
 
@@ -605,7 +606,7 @@ class MixVisionDepthConcatTransformer(nn.Module):
         rgb_featurs.append(x)
 
         # Concatinate first depth features with first RGB features
-        concat = torch.cat([x, depth_featurs[2]])
+        concat = torch.cat([x, depth_featurs[2]], dim=1)
         x = self.conc_conv_3(concat)
 
 
@@ -695,7 +696,7 @@ class mit_b5(MixVisionTransformer):
 @BACKBONES.register_module()
 class mit_depth_b0(MixVisionDepthTransformer):
     def __init__(self, **kwargs):
-        super(mit_b0, self).__init__(
+        super(mitmit_depth_b0_b0, self).__init__(
             patch_size=4, embed_dims=[32, 64, 160, 256], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
             qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 2, 2], sr_ratios=[8, 4, 2, 1],
             drop_rate=0.0, drop_path_rate=0.1, **kwargs)
@@ -741,6 +742,62 @@ class mit_depth_b4(MixVisionDepthTransformer):
 class mit_depth_b5(MixVisionDepthTransformer):
     def __init__(self, **kwargs):
         super(mit_depth_b5, self).__init__(
+            patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
+            qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[3, 6, 40, 3], sr_ratios=[8, 4, 2, 1],
+            drop_rate=0.0, drop_path_rate=0.1, **kwargs)
+
+##########################################################################################
+
+
+@BACKBONES.register_module()
+class mit_depth_concat_b0(MixVisionDepthConcatTransformer):
+    def __init__(self, **kwargs):
+        super(mit_depth_concat_b0, self).__init__(
+            patch_size=4, embed_dims=[32, 64, 160, 256], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
+            qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 2, 2], sr_ratios=[8, 4, 2, 1],
+            drop_rate=0.0, drop_path_rate=0.1, **kwargs)
+
+
+@BACKBONES.register_module()
+class mit_depth_concat_b1(MixVisionDepthConcatTransformer):
+    def __init__(self, **kwargs):
+        super(mit_depth_concat_b1, self).__init__(
+            patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
+            qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 2, 2], sr_ratios=[8, 4, 2, 1],
+            drop_rate=0.0, drop_path_rate=0.1, **kwargs)
+
+
+@BACKBONES.register_module()
+class mit_depth_concat_b2(MixVisionDepthConcatTransformer):
+    def __init__(self, **kwargs):
+        super(mit_depth_concat_b2, self).__init__(
+            patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
+            qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[3, 4, 6, 3], sr_ratios=[8, 4, 2, 1],
+            drop_rate=0.0, drop_path_rate=0.1, **kwargs)
+
+
+@BACKBONES.register_module()
+class mit_depth_concat_b3(MixVisionDepthConcatTransformer):
+    def __init__(self, **kwargs):
+        super(mit_depth_concat_b3, self).__init__(
+            patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
+            qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[3, 4, 18, 3], sr_ratios=[8, 4, 2, 1],
+            drop_rate=0.0, drop_path_rate=0.1, **kwargs)
+
+
+@BACKBONES.register_module()
+class mit_depth_concat_b4(MixVisionDepthConcatTransformer):
+    def __init__(self, **kwargs):
+        super(mit_depth_concat_b4, self).__init__(
+            patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
+            qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[3, 8, 27, 3], sr_ratios=[8, 4, 2, 1],
+            drop_rate=0.0, drop_path_rate=0.1, **kwargs)
+
+
+@BACKBONES.register_module()
+class mit_depth_concat_b5(MixVisionDepthConcatTransformer):
+    def __init__(self, **kwargs):
+        super(mit_depth_concat_b5, self).__init__(
             patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
             qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[3, 6, 40, 3], sr_ratios=[8, 4, 2, 1],
             drop_rate=0.0, drop_path_rate=0.1, **kwargs) 

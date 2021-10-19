@@ -15,8 +15,6 @@ from ..utils import get_root_logger
 
 
 
-
-#TODO rewrite the dataset code
 @DATASETS.register_module()
 class SberbankDatasetWithDepth(CustomDataset):
     """ADE20K dataset.

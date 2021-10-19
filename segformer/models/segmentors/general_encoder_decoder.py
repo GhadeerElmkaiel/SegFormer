@@ -20,9 +20,13 @@ class GeneralEncoderDecoder(EncoderDecoder):
 
     def extract_feat(self, img, img_metas):
         """Extract features from images."""
+        # print("____________\nimg\n_______________")
+        # print(img)
         x = self.backbone(img, img_metas)
         if self.with_neck:
             x = self.neck(x)
+        # print("____________\nx\n_______________")
+        # print(x)
         return x
 
     def encode_decode(self, img, img_metas):

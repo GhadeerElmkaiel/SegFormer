@@ -11,12 +11,10 @@ import os.path as osp
 from mmcv.image import imresize
 
 from .pipelines import Compose
-from mmseg.utils import get_root_logger
+from ..utils import get_root_logger
 
 
 
-
-#TODO rewrite the dataset code
 @DATASETS.register_module()
 class RGBDMirrorsHHA(CustomDataset):
     """RGBDMirrorsHHA dataset.
